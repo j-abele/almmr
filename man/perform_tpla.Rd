@@ -31,6 +31,8 @@ perform_tpla(
 S4-Class or Raster. If keep_lines = TRUE, an S4 object containing the result raster of the kernel density estimation and the cost-optimal paths is returned.
 }
 \description{
+TPLA stands for Total Passability Landscape Analysis. With the help of least-cost paths and a density calculation,
+regions with high route or movement potential are calculated within a circular analysis area.
 Placeholder: Description to follow (suggestions for research-area, number of points, Spatial-classes etc.)
 }
 \examples{

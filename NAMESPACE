@@ -2,3 +2,4 @@
 
 export(create_cost_surface)
 export(perform_tpla)
+export(perform_tpla_line_based)
