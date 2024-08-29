@@ -1,6 +1,15 @@
 #' Site-based (theoretical) route network (sbr_network)
 #'
-#' Generates a theoretical route network based on site locations, a given route, based on conductance values.
+#' Generates a theoretical route network based on site locations, a given route, based on conductance values. 
+#' Strongly inspired by the least-cost network-to-builder process described by David Waugh in 2000 (Waugh 2000, 615, see also Herzog 2013, 239).
+#' 
+#' Literature:
+#' D. Waugh, Geography. An Integrated Approach. Third edition (Cheltenham 2000).
+#' 
+#' I. Herzog, Least-cost Networks. In: G. Earl/T. Sly/A. Chrysanthi/P. Murrieta-Flores/C.
+#' Papadopoulos/I. Romanowska/D. Wheatley (Hrsg.), Archaeology in the Digital Era II. e-Papers
+#' from the 40th Conference on Computer Applications and Quantitative Methods in Archaeology
+#' (Amsterdam 2013) 237-248.
 #'
 #' @param sites SpatialPointsDataFrame or compatible object. The site locations.
 #' @param lines SpatialLinesDataFrame. The base lines to start from (known route).
