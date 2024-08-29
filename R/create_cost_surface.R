@@ -15,6 +15,7 @@
 #' @param wetlandsFactor Factor of wetlands-friction (e.g. 0.9 for factor 10); calculated directly on speed.
 #' @param costFunction Cost function. Implemented: "ToblersHikingFunction",  "Irmischer-Clarke's", "Wheeled-Vehicels".
 #' @param critical_slope Critical Slope, only relevant for Wheeled Vehicles function. Default is 10%.
+#' @export
 #' @return Cost surface.
 
 create_cost_surface <- function (dem,

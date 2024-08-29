@@ -29,27 +29,27 @@ create_cost_surface(
 
 \item{numberOfDirections}{Whole number. Number of neighbours for cost surface calculation (4, 8 or 16).}
 
-\item{slopeGainFactor}{TRUE/FALSE. Default FALSE. If TRUE, a quadratic function starting slopeGainStart value will be used}
+\item{slopeGainFactor}{TRUE/FALSE. Default FALSE. If TRUE, a quadratic function starting slopeGainStart value will be used.}
 
-\item{slopeGainStart}{A number.  Start slope value of the quadratic function in slope m (e.g. 0.1 for 10\% slope)}
+\item{slopeGainStart}{A number.  Start slope value of the quadratic function in slope m (e.g. 0.1 for 10\% slope).}
 
-\item{slopeBarrier}{TRUE/FALSE. Default FALSE. If TRUE, slope higher than given slopeBarrierValue get NA values (not passable)}
+\item{slopeBarrier}{TRUE/FALSE. Default FALSE. If TRUE, slope higher than given slopeBarrierValue get NA values (not passable).}
 
 \item{slopeBarrierValue}{Start slope value for barriers (e.g. 0.07 for 7\% slope).}
 
-\item{barriers}{Polygon of class SpatVector. Area of barriers (e.g. a river, lake, political boundaries)}
+\item{barriers}{Polygon of class SpatVector. Area of barriers (e.g. a river, lake, political boundaries).}
 
 \item{wetlands}{Polygon of class SpatVector. Area of wetlands/fens.}
 
-\item{wetlandsFactor}{Factor of wetlands-friction (e.g. 0.9 for factor 10); calculated directly on speed}
+\item{wetlandsFactor}{Factor of wetlands-friction (e.g. 0.9 for factor 10); calculated directly on speed.}
 
-\item{costFunction}{Cost function. Implemented: "ToblersHikingFunction",  "Irmischer-Clarke's", "Wheeled-Vehicels"}
+\item{costFunction}{Cost function. Implemented: "ToblersHikingFunction",  "Irmischer-Clarke's", "Wheeled-Vehicels".}
 
 \item{critical_slope}{Critical Slope, only relevant for Wheeled Vehicles function. Default is 10\%.}
 }
 \value{
-Cost surface
+Cost surface.
 }
 \description{
-Create Cost Surface
+Erklärungstext!!
 }
