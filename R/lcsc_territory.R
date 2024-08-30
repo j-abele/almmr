@@ -1,5 +1,8 @@
 #' LCSC Territory - Potential settlement area
 #' 
+#' The function generates theoretical territories or catchment areas based on a cost surface for one or more locations. 
+#' The catchment areas are calculated on the basis of a certain period of time, which, starting from a central location, the movement can take place in all directions depending on the costs.
+#' 
 #' @param dem Raster. Digital Elevation Data.
 #' @param sites Sites to analyse as points.
 #' @param movement_time Time-Frame in minutes
