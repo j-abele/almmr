@@ -50,6 +50,11 @@ perform_tpla <- function(cost_surface,
   crs(extent_cost_surface) <- crs(center_point)
   crs(buffer_center) <- crs(center_point)
 
+  # Überprüfung der räumlichen Beziehung
+  if (!terra::relate(extent_cost_surface, buffer_center, "contains")) {
+    stop('The radius might be outside the cost surface. Choose a smaller radius or use a larger cost surface as input.')
+  }
+
   # Return warning if not:
   if (!relate(extent_cost_surface, buffer_center, relation="contains")) {
     warning('The radius might be outside the cost surface. Choose a smaller radius or use a larger cost surface as input.')
@@ -66,6 +71,7 @@ perform_tpla <- function(cost_surface,
 
   # exclude start_points in NA-regions (barriers in cost surface) and give warning
   start_points$cost_value <- terra::extract(terra::rast(raster::raster(cost_surface)), start_points)[,2]
+
   check_vect <- is.na(start_points$cost_value)
   count_start_points <- length(start_points)
   start_points <- na.omit(start_points, "cost_value")
@@ -93,14 +99,12 @@ perform_tpla <- function(cost_surface,
 
   ###########
   ### SpatialLines into PSP-Object (since maptools is autdated there is no working solution e.g. with sf)
-
   # Extrahieren aller Linienkoordinaten in einer Liste
   all_coords <- lapply(merged_lines@lines, function(line) {
     do.call(rbind, lapply(line@Lines, function(segment) {
       segment@coords
     }))
   })
-
   # Anzahl der Linien
   num_lines <- length(all_coords)
 
@@ -125,9 +129,9 @@ perform_tpla <- function(cost_surface,
   # Erstellen des psp-Objekts
   paths_psp <- spatstat.geom::psp(x0 = x0, y0 = y0, x1 = x1, y1 = y1, window = window)
 
-
   # Kerndichteberchnung
-  paths_kernel <- terra::rast(density(paths_psp, sigma=sigma_density_calc))
+  paths_kernel <- density(paths_psp, sigma=sigma_density_calc)
+  paths_kernel <- terra::rast(paths_kernel)
 
   ########
   ## create list if keep_lines = TRUE (better S4-Object?)
