@@ -17,5 +17,6 @@ Imports:
     sf,
     sp,
     spatstat,
+    spatstat.explore,
     spatstat.geom,
     terra

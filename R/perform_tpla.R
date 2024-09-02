@@ -130,7 +130,7 @@ perform_tpla <- function(cost_surface,
   paths_psp <- spatstat.geom::psp(x0 = x0, y0 = y0, x1 = x1, y1 = y1, window = window)
 
   # Kerndichteberchnung
-  paths_kernel <- density(paths_psp, sigma=sigma_density_calc)
+  paths_kernel <- spatstat.explore::density.psp(paths_psp, sigma=sigma_density_calc, eps=(terra::res(terra::rast(dem))))
   paths_kernel <- terra::rast(paths_kernel)
 
   ########

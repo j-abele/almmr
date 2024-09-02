@@ -4,14 +4,20 @@
 \alias{create_hillshade}
 \title{Koordinatenbezugssystem vereinheitlichen und Überführung von geo-Objekten in terra-clasen}
 \usage{
-create_hillshade(dem, angle = 45, driection = 315)
+create_hillshade(dem, angle = 45, direction = 315)
 }
 \arguments{
 \item{dem}{Digital elevation modell of class SpatRaster}
 
+\item{angle}{Angle of shading}
+
+\item{direction}{Light direction}
+
 \item{raster_object}{Geo-Raster, e.g. of raster/sp/sf-class}
 
-\item{vector_object}{Geo-Vector, e.g. of raster/sp/sf-class}
+\item{vector_object}{Geo-Vector, e.g. of raster/sp/sf-class
+#export
+Create Hillshdae from SpatRaster-DEM}
 }
 \description{
 Koordinatenbezugssystem vereinheitlichen und Überführung von geo-Objekten in terra-clasen
