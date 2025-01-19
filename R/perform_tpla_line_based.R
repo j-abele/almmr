@@ -15,8 +15,17 @@
 #' @export
 #'
 #' @examples
-#' # fun_TPLA(cost_surface,first_line, second_line, number_of_points, sigma_density_calc, keep_lines=FALSE)
-
+#' # Load example data
+#' data(dem)
+#' data(sites)
+#'
+#' # Create a cost surface (example with a hypothetical function)
+#' cost_surface <- create_cost_surface(dem, costFunction = "ToblersHikingFunction")
+#'
+#' # Perform TPLA
+#' result <- perform_tpla(cost_surface, sites[1,], 500, 100, 1)
+#' plot(result)
+#'
 
 perform_tpla_line_based <- function(cost_surface,
                                     first_line,

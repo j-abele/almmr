@@ -51,7 +51,7 @@ create_cost_surface <- function (dem,
   slope.trans <- gdistance::transition(raster::raster(dem), alt.diff, numberOfNeighbors, symm = F)
   #  Divide by distance between cells::
   slope <- gdistance::geoCorrection(slope.trans)
-  adj <- adjacent(dem, cells = 1:ncell(dem), pairs = TRUE, directions = numberOfDirections)
+  adj <- terra::adjacent(dem, cells = 1:terra::ncell(dem), pairs = TRUE, numberOfDirections)
 
   # include slope-barrier-factor and slope-gain factor (calculation is done on transitionMatrix,
   ## every cell-connection/ edge gets its own value)

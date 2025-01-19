@@ -10,69 +10,95 @@
 #' @param number_of_points Integer. Number of starting points on the circle.
 #' @param sigma_density_calc Number. Standard deviation for the kernel density estimation.
 #' @param keep_lines TRUE or FALSE. Default is FALSE. If TRUE, the cost-optimal paths will be included in the result object.
-#' @return S4-Class or Raster. If keep_lines = TRUE, an S4 object containing the result raster of the kernel density estimation and the cost-optimal paths is returned.
+#' @return List or raster. If keep_lines = TRUE, a list object containing the result raster of the kernel density estimation and the cost-optimal paths will be returned.
 #' @export
 #'
 #' @examples
-#' # fun_TPLA(cost_surface, center_point, radius_tpla, number_of_points, sigma_density_calc, keep_lines=FALSE)
+#'
+#' # Create cost surface
+#' cost_surface <- almmr::create_cost_surface(dem, slopeGainFactor=TRUE)
+#' site <- terra::vect(cbind(530681, 5326949))
+#' terra::crs(site) <- cost_surface@srs
+#'
+#' # Perform TPLA
+#' tpla_result <- almmr::perform_tpla(cost_surface, site, 4500, 50, 200)
+#' plot(tpla_result)
+#' plot(site, add=T)
+#'
+#'
+#' Optional:
+#' dem_hill <- almmr::create_hillshade(dem)
+#' plot(dem_hill, col = gray.colors(100), main = "TPLA Results with Hillshade", legend = FALSE)
+#' plot(tpla_result, add = TRUE, col = hcl.colors(100, "YlOrRd"))
+#' plot(site, add=T)
+
+tpla_result <- perform_tpla(cost_surface,
+                            center_point = site,
+                            radius_tpla = 4500,
+                            number_of_points = 50,
+                            sigma_density_calc =  200)
 
 perform_tpla <- function(cost_surface,
                          center_point,
                          radius_tpla,
                          number_of_points,
                          sigma_density_calc,
-                         project_crs=NULL,
                          keep_lines=FALSE) {
 
 
-  # center_point als terra::vect
+  # center_point as terra::vect
   if (class(center_point) != "SpatVector") {
     center_point <- terra::vect(center_point)
   }
 
-  # Check if project CRS is given, otherwise use center_point point CRS. Warning and stop if no CRS is given.
-  if (!is.null(project_crs)) {
-    crs(center_point) <- project_crs
-  } else if (is.null(project_crs) & !is.null(crs(center_point))) {
-    project_crs <- crs(center_point)
-  } else {
-    warning('No CRS provided as an argument; the focal point has no CRS. Please specify a coordinate reference system (project_crs = "")')
-    stop('No valid CRS provided.')
+  # Check if cost_surface is a Transition-Objekt
+  if (!inherits(cost_surface, "Transition")) {
+    stop("The cost_surface must be a Transition object.")
+  }
+
+  # EPSG-Code from cost_surface
+  cost_surface_epsg <- cost_surface@srs
+  if (is.null(cost_surface_epsg) || cost_surface_epsg == "") {
+    stop("The Transition object does not have a valid EPSG code.")
+  }
+
+  # Check if center_point has CRS
+  center_point_epsg <- terra::crs(center_point, proj = TRUE)
+  if (is.null(center_point_epsg) || center_point_epsg == "") {
+    stop("The center_point does not have a valid CRS or EPSG code.")
+  }
+
+
+  # check for same CRS
+  if (cost_surface_epsg != center_point_epsg) {
+    stop(sprintf("CRS mismatch: cost_surface EPSG (%s) and center_point EPSG (%s) do not match.",
+                 cost_surface_epsg, center_point_epsg))
   }
 
   # Generate circle for starting points
   # orig buffer_center <- as(buffer(center, radius), "SpatialLines")
   buffer_center <- terra::as.lines(terra::buffer(center_point, radius_tpla))
+  terra::crs(buffer_center) <- terra::crs(center_point)
 
   # Check if buffer is outside of cost_surface extent, stop process if yes
-  # original: extent_cost_surface <- as(extent(raster(cost_surface)), "SpatialPolygons")
   extent_cost_surface <- terra::vect(terra::ext(cost_surface@extent))
-  crs(extent_cost_surface) <- crs(center_point)
-  crs(buffer_center) <- crs(center_point)
-
-  # Überprüfung der räumlichen Beziehung
+  terra::crs(extent_cost_surface) <- terra::crs(center_point)
   if (!terra::relate(extent_cost_surface, buffer_center, "contains")) {
-    stop('The radius might be outside the cost surface. Choose a smaller radius or use a larger cost surface as input.')
-  }
-
-  # Return warning if not:
-  if (!relate(extent_cost_surface, buffer_center, relation="contains")) {
-    warning('The radius might be outside the cost surface. Choose a smaller radius or use a larger cost surface as input.')
-    stop()
+    stop("The radius might be outside the cost surface. Choose a smaller radius or use a larger cost surface.")
   }
 
   # Warning if less than 25 points (25 because 2 are removed for each set during calculation)
-  if (length(number_of_points) < 25) {
+  if (length(1:number_of_points) < 25) {
     warning('Few starting points selected. At least 25 are recommended.')
   }
 
   # Generate starting points on the circle
-  start_points <- terra::vect(sf::st_cast(sf::st_line_sample(sf::st_as_sf(buffer_center), number_of_points, type = "regular"), "POINT"))
+  start_points <- terra::vect(sf::st_cast(
+    sf::st_line_sample(sf::st_as_sf(buffer_center), number_of_points, type = "regular"), "POINT"
+    ))
 
   # exclude start_points in NA-regions (barriers in cost surface) and give warning
   start_points$cost_value <- terra::extract(terra::rast(raster::raster(cost_surface)), start_points)[,2]
-
-  check_vect <- is.na(start_points$cost_value)
   count_start_points <- length(start_points)
   start_points <- na.omit(start_points, "cost_value")
   if (!count_start_points == length(start_points)) {
@@ -80,11 +106,12 @@ perform_tpla <- function(cost_surface,
   }
 
   # Create shortest paths
-  sp_paths <-  lapply(seq_along(start_points), function(i) {
+  sp_paths <-  lapply(1:nrow(start_points), function(i) {
     start <- start_points[i]
     target_points <- start_points[-i]
-    crs(target_points) <- project_crs
-    crs(start) <- project_crs
+    crs(target_points) <- terra::crs(center_point)
+    crs(start) <- terra::crs(center_point)
+
     # Remove neighborhood points to reduce edge-effect
     # select neigbouring point by Buffer of closest point (may be better with distance-function of terra)
     min_dist <- min(terra::distance(start, target_points))
