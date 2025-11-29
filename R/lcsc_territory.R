@@ -14,7 +14,6 @@
 #' @param name_index Index of a column with the names of the sites. If not specified, a name is automatically generated according to the pattern site_ [consecutive number].
 #' @param wd Directory in which the polygons and any raster data can be saved. Optional.
 #' @param costFunction Cost-Function. Possible: "ToblersHikingFunction"
-#' @export
 #' @return Polygon-Shapefile. Optional: Raster TIFF
 
 lcsc_territory <- function(dem,
