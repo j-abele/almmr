@@ -37,3 +37,12 @@ Suggests:
     rmarkdown,
     testthat
 VignetteBuilder: knitr
+
+Keywords:
+    archaeology, 
+    least-cost-analysis, 
+    landscape-archaeology, 
+    movement-modeling, 
+    potential-settlement-area, 
+    network-to-builder, 
+    total-passability-landscape-analysis
