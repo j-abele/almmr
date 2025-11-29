@@ -2,7 +2,4 @@
 
 export(create_cost_surface)
 export(create_hillshade)
-export(lcsc_territory)
-export(perform_tpla)
-export(perform_tpla_line_based)
-export(sbr_network)
+export(load_dem)

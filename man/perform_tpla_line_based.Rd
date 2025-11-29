@@ -34,9 +34,3 @@ List or Raster. If keep_lines = TRUE, an S4 object containing the result raster 
 TPLA stands for Total Passability Landscape Analysis. Using least-cost paths and a density calculation,
 it calculates regions with high routes or movement potential between two spatial lines.
 }
-\details{
-Placeholder: Add more information (suggestions for research-area, number of points, Spatial-classes etc.)
-}
-\examples{
-# fun_TPLA(cost_surface,first_line, second_line, number_of_points, sigma_density_calc, keep_lines=FALSE)
-}

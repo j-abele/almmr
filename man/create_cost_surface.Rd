@@ -23,33 +23,34 @@ create_cost_surface(
 \arguments{
 \item{dem}{Raster. Digital elevation data. Best as class SpatRaster; sp, sf and raster objects may also work.}
 
-\item{epsg}{EPSG-Code as string (e. g. "EPSG:25832").}
+\item{epsg}{EPSG-Code as string (e.g. "EPSG:25832"). Currently not used internally.}
 
 \item{numberOfNeighbors}{Whole number. Number of neighbours to be considered when calculating slope (16 is default).}
 
 \item{numberOfDirections}{Whole number. Number of neighbours for cost surface calculation (4, 8 or 16).}
 
-\item{slopeGainFactor}{TRUE/FALSE. Default FALSE. If TRUE, a quadratic function starting slopeGainStart value will be used.}
+\item{slopeGainFactor}{Logical. Default FALSE. If TRUE, a quadratic function starting at \code{slopeGainStart} will be used.}
 
-\item{slopeGainStart}{A number.  Start slope value of the quadratic function in slope m (e.g. 0.1 for 10\% slope).}
+\item{slopeGainStart}{Numeric. Start slope value of the quadratic function in slope m (e.g. 0.1 for 10\% slope).}
 
-\item{slopeBarrier}{TRUE/FALSE. Default FALSE. If TRUE, slope higher than given slopeBarrierValue get NA values (not passable).}
+\item{slopeBarrier}{Logical. Default FALSE. If TRUE, slopes higher than \code{slopeBarrierValue} get NA values (not passable).}
 
-\item{slopeBarrierValue}{Start slope value for barriers (e.g. 0.07 for 7\% slope).}
+\item{slopeBarrierValue}{Numeric. Start slope value for barriers (e.g. 0.07 for 7\% slope).}
 
-\item{barriers}{Polygon of class SpatVector. Area of barriers (e.g. a river, lake, political boundaries).}
+\item{barriers}{Polygon of class SpatVector. Area of barriers (e.g. rivers, lakes, political boundaries).}
 
 \item{wetlands}{Polygon of class SpatVector. Area of wetlands/fens.}
 
-\item{wetlandsFactor}{Factor of wetlands-friction (e.g. 0.9 for factor 10); calculated directly on speed.}
+\item{wetlandsFactor}{Numeric. Factor of wetlands friction (e.g. 1.78); applied directly on speed (1 / wetlandsFactor).}
 
-\item{costFunction}{Cost function. Implemented: "ToblersHikingFunction",  "Irmischer-Clarke's", "Wheeled-Vehicels".}
+\item{costFunction}{Character. Cost function. Implemented: "ToblersHikingFunction", "Irmischer-Clarke's", "Wheeled-Vehicels".}
 
-\item{critical_slope}{Critical Slope, only relevant for Wheeled Vehicles function. Default is 10\%.}
+\item{critical_slope}{Numeric. Critical slope in percent (only relevant for "Wheeled-Vehicels"). Default is 10.}
 }
 \value{
-Cost surface.
+A \code{TransitionLayer} object representing the cost surface.
 }
 \description{
-Erklärungstext!!
+Creates a cost surface based on a digital elevation model (DEM) using
+different cost functions and optional barrier or wetland factors.
 }

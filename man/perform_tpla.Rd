@@ -10,7 +10,6 @@ perform_tpla(
   radius_tpla,
   number_of_points,
   sigma_density_calc,
-  project_crs = NULL,
   keep_lines = FALSE
 )
 }
@@ -28,13 +27,10 @@ perform_tpla(
 \item{keep_lines}{TRUE or FALSE. Default is FALSE. If TRUE, the cost-optimal paths will be included in the result object.}
 }
 \value{
-S4-Class or Raster. If keep_lines = TRUE, an S4 object containing the result raster of the kernel density estimation and the cost-optimal paths is returned.
+List or raster. If keep_lines = TRUE, a list object containing the result raster of the kernel density estimation and the cost-optimal paths will be returned.
 }
 \description{
 TPLA stands for Total Passability Landscape Analysis. With the help of least-cost paths and a density calculation,
 regions with high route or movement potential are calculated within a circular analysis area.
 Placeholder: Description to follow (suggestions for research-area, number of points, Spatial-classes etc.)
-}
-\examples{
-# fun_TPLA(cost_surface, center_point, radius_tpla, number_of_points, sigma_density_calc, keep_lines=FALSE)
 }

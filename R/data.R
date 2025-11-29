@@ -1,16 +1,15 @@
-#' Digital elevation model
+#' Example Digital Elevation Model
 #'
-#' Digital elevation model of the Heuneburg region (5 km rectangle from Heuneburg)
-#' with a resolution of 25 m, aggregated from high resolution LiDAR files from the
-#' Landesamt für Geoinformation und Landentwicklung Baden-Württemberg.
+#' Loads the example DEM (Heuneburg region, 25 m resolution).
+#' Use `data(dem)` to access the raster via a lazy-loading wrapper.
 #'
-#' @format A [`SpatRaster`][terra::SpatRaster] object named `dem`.
-#' The DEM is projected in the ETRS89 / UTM Zone 32N coordinate system
-#' (`EPSG:25832`).
-
-#' @source Landesamt für Geoinformation und Landentwicklung Baden-Württemberg (LGL),
-#'  \url{https://www.lgl-bw.de}
-#'  #' @examples
+#' @format A function that returns a [`SpatRaster`][terra::SpatRaster].
+#' @source Landesamt für Geoinformation und Landentwicklung Baden-Württemberg
+#' @examples
+#' \dontrun{
 #' data(dem)
-#' plot(dem)
+#' r <- dem()
+#' plot(r)
+#' }
 "dem"
+

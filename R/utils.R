@@ -16,3 +16,19 @@ create_hillshade <- function(dem,  angle = 45, direction = 315 ) {
 }
 
 
+#' Load the example DEM
+#'
+#' Loads the example digital elevation model (DEM) that comes with the package.
+#' The data file itself is stored as a GeoTIFF in `inst/extdata/` but is
+#' accessed through this helper so that users can simply call `data(dem)`.
+#'
+#' @return A [`SpatRaster`][terra::SpatRaster] object.
+#' @examples
+#' \dontrun{
+#' data(dem)
+#' plot(dem)
+#' }
+#' @export
+load_dem <- function() {
+  terra::rast(system.file("extdata", "dem.tif", package = "almmr", mustWork = TRUE))
+}
