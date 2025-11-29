@@ -127,5 +127,4 @@ plot(network_pts, col = "black", pch = 16, add = TRUE)
 ## License
 
 Code licensed under the MIT License.  
-Example data (Heuneburg DEM) © LGL Baden-Württemberg, used with
-permission.
+Example data (Heuneburg DEM) © LGL Baden-Württemberg
