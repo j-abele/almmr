@@ -32,12 +32,6 @@
 #' plot(tpla_result, add = TRUE, col = hcl.colors(100, "YlOrRd"))
 #' plot(site, add=T)
 
-tpla_result <- perform_tpla(cost_surface,
-                            center_point = site,
-                            radius_tpla = 4500,
-                            number_of_points = 50,
-                            sigma_density_calc =  200)
-
 perform_tpla <- function(cost_surface,
                          center_point,
                          radius_tpla,
