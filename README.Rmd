@@ -1,19 +1,28 @@
+---
+output: github_document
+---
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 6,
+  dpi = 150
+)
+```
 
 # almmr – Archaeological Landscape Movement Modeling in R
 
-The **almmr** package provides tools for modeling movement,
-accessibility, and territorial structure in archaeological landscapes.  
-It builds on digital elevation models (DEMs) and implements cost-surface
-modeling, least-cost path analysis (TPLA), and spatial boundary
-reconstruction (SBR) methods.  
-All examples below use a 25 m DEM of the Heuneburg region in
-Baden-Württemberg, Germany, included with the package.
+The **almmr** package provides tools for modeling movement, accessibility, and territorial structure in archaeological landscapes.  
+It builds on digital elevation models (DEMs) and implements cost-surface modeling, least-cost path analysis (TPLA), and spatial boundary reconstruction (SBR) methods.  
+All examples below use a 25 m DEM of the Heuneburg region in Baden-Württemberg, Germany, included with the package.
 
-------------------------------------------------------------------------
+---
 
 ## Installation
 
-``` r
+```r
 # Install from GitHub
 devtools::install_github("j-abele/almmr")
 
@@ -23,11 +32,11 @@ library(raster)
 library(sf)
 ```
 
-------------------------------------------------------------------------
+---
 
 ## First step – Cost Surface Generation
 
-``` r
+```r
 # Load DEM and create hillshade
 data(dem)
 r <- dem()
@@ -44,11 +53,11 @@ plot(hs, col = gray.colors(256, 0.1, 1), legend = FALSE, main = "Cost Surface (T
 plot(raster::raster(cs), add = TRUE, alpha = 0.5)
 ```
 
-------------------------------------------------------------------------
+---
 
 ## TPLA (Least-Cost Path Analysis)
 
-``` r
+```r
 # Generate random start and end points within the DEM extent
 set.seed(42)
 pts <- sf::st_sample(sf::st_as_sf(terra::as.polygons(r)), 2)
@@ -70,11 +79,11 @@ legend("topleft", legend = c("Start", "End", "Least-cost path"),
        pch = c(16, 16, NA), bg = "white")
 ```
 
-------------------------------------------------------------------------
+---
 
 ## LCSC Territory - Potential settlement area
 
-``` r
+```r
 # Create 10 random settlement points
 set.seed(7)
 points_sf <- sf::st_sample(sf::st_as_sf(terra::as.polygons(r)), 10)
@@ -92,11 +101,11 @@ plot(territories, col = hcl.colors(10, "Spectral", alpha = 0.5), add = TRUE)
 plot(points_sf, col = "black", pch = 16, add = TRUE)
 ```
 
-------------------------------------------------------------------------
+---
 
 ## SBR_network - Site-based (theoretical) route network (sbr_network)
 
-``` r
+```r
 # Create 20 random points in the DEM extent
 set.seed(9)
 network_pts <- sf::st_sample(sf::st_as_sf(terra::as.polygons(r)), 20)
@@ -122,10 +131,10 @@ plot(sp, col = "red", lwd = 2, add = TRUE)
 plot(network_pts, col = "black", pch = 16, add = TRUE)
 ```
 
-------------------------------------------------------------------------
+---
 
 ## License
 
 Code licensed under the MIT License.  
-Example data (Heuneburg DEM) © LGL Baden-Württemberg, used with
-permission.
+Example data (Heuneburg DEM) © LGL Baden-Württemberg, used with permission.
+
