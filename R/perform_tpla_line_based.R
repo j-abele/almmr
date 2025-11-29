@@ -3,8 +3,6 @@
 #' TPLA stands for Total Passability Landscape Analysis. Using least-cost paths and a density calculation,
 #' it calculates regions with high routes or movement potential between two spatial lines.
 #'
-#' Placeholder: Add more information (suggestions for research-area, number of points, Spatial-classes etc.)
-#'
 #' @param cost_surface Transition Object. Cost surface (Class: Transition, calculated with the gdistance package)
 #' @param first_line Spatial Line. Class of LINESTRING (sf).
 #' @param second_line  Spatial Line. Class of LINESTRING (sf).
@@ -12,7 +10,6 @@
 #' @param sigma_density_calc Number. Standard deviation for the kernel density estimation.
 #' @param keep_lines TRUE or FALSE. Default is FALSE. If TRUE, the cost-optimal paths will be included in the result object.
 #' @return List or Raster. If keep_lines = TRUE, an S4 object containing the result raster of the kernel density estimation and the cost-optimal paths is returned.
-#' @export
 #'
 #' @examples
 #' # Load example data

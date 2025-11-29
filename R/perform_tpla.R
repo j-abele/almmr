@@ -11,8 +11,6 @@
 #' @param sigma_density_calc Number. Standard deviation for the kernel density estimation.
 #' @param keep_lines TRUE or FALSE. Default is FALSE. If TRUE, the cost-optimal paths will be included in the result object.
 #' @return List or raster. If keep_lines = TRUE, a list object containing the result raster of the kernel density estimation and the cost-optimal paths will be returned.
-#' @export
-#'
 #' @examples
 #'
 #' # Create cost surface
@@ -38,7 +36,6 @@ perform_tpla <- function(cost_surface,
                          number_of_points,
                          sigma_density_calc,
                          keep_lines=FALSE) {
-
 
   # center_point as terra::vect
   if (class(center_point) != "SpatVector") {

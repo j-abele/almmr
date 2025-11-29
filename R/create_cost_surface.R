@@ -54,20 +54,25 @@ create_cost_surface <- function(
   slope_trans <- gdistance::transition(dem_r, alt_diff, numberOfNeighbors, symm = FALSE)
   slope <- gdistance::geoCorrection(slope_trans)
 
-  adj <- terra::adjacent(dem, cells = 1:terra::ncell(dem), pairs = TRUE, directions = numberOfDirections)
-
   # --- Apply slope gain / barrier modifications ------------------------------
+
+  # Apply slope gain factor (quadratic increase beyond threshold)
   if (slopeGainFactor) {
-    slope[adj] <- ifelse(
-      abs(slope[adj]) > slopeGainStart,
-      sign(slope[adj]) * ((abs(slope[adj]) / slopeGainStart)^2) * slopeGainStart,
-      slope[adj]
+    slope@x <- ifelse(
+      abs(slope@x) > slopeGainStart,
+      sign(slope@x) * ((abs(slope@x) / slopeGainStart)^2) * slopeGainStart,
+      slope@x
     )
   }
 
+  # Apply slope barrier (cells above threshold become impassable)
   if (slopeBarrier) {
-    slope[adj] <- ifelse(abs(slope[adj]) > slopeBarrierValue, NA, slope[adj])
+    slope@x <- ifelse(abs(slope@x) > slopeBarrierValue, NA, slope@x)
   }
+
+  # Rebuild the TransitionLayer from the modified matrix
+  slope <- gdistance::Transition(slope, transitionFunction = NULL,
+                                 directions = numberOfDirections, symm = FALSE)
 
   ### Cost Surface calculation ----
   speed <- slope
