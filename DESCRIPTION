@@ -1,18 +1,27 @@
 Package: almmr
-Title: What the Package Does (One Line, Title Case)
-Version: 0.1
+Type: Package
+Title: Tools for Least-Cost Movement Modeling in Archaeological Landscapes
+Version: 0.1.0
 Authors@R: 
-    person("Jonas", "Abele" , "jonas.abele@rps.bwl.de", role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+    person(
+      given = "Jonas",
+      family = "Abele",
+      email = "jonas.abele@rps.bwl.de",
+      role = c("aut", "cre"),
+      comment = c(ORCID = "https://orcid.org/0009-0008-1540-6202")
+    )
+Description: Provides tools for modeling and analyzing least-cost movement and 
+    accessibility based on digital elevation models (DEMs) and friction surfaces. 
+    The package includes functions for creating cost surfaces using Tobler's 
+    Hiking Function, Irmischer-Clarke's model, and wheeled-vehicle resistance 
+    models. Example data from the Heuneburg region in southwestern Germany are included.
+License: MIT + file LICENSE
 Encoding: UTF-8
+LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
 Depends: 
-    R (>= 2.10)
-LazyData: true
+    R (>= 3.5)
 Imports: 
     dplyr,
     gdistance,
@@ -23,3 +32,8 @@ Imports:
     spatstat.explore,
     spatstat.geom,
     terra
+Suggests:
+    knitr,
+    rmarkdown,
+    testthat
+VignetteBuilder: knitr

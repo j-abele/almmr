@@ -10,20 +10,6 @@
 #' @param sigma_density_calc Number. Standard deviation for the kernel density estimation.
 #' @param keep_lines TRUE or FALSE. Default is FALSE. If TRUE, the cost-optimal paths will be included in the result object.
 #' @return List or Raster. If keep_lines = TRUE, an S4 object containing the result raster of the kernel density estimation and the cost-optimal paths is returned.
-#'
-#' @examples
-#' \dontrun{
-#' # Load example data
-#' data(dem)
-#' data(sites)
-#'
-#' # Create a cost surface (example with a hypothetical function)
-#' cost_surface <- create_cost_surface(dem, costFunction = "ToblersHikingFunction")
-#'
-#' # Perform TPLA
-#' result <- perform_tpla(cost_surface, sites[1,], 500, 100, 1)
-#' plot(result)
-#'}
 
 perform_tpla_line_based <- function(cost_surface,
                                     first_line,

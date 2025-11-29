@@ -11,26 +11,7 @@
 #' @param sigma_density_calc Number. Standard deviation for the kernel density estimation.
 #' @param keep_lines TRUE or FALSE. Default is FALSE. If TRUE, the cost-optimal paths will be included in the result object.
 #' @return List or raster. If keep_lines = TRUE, a list object containing the result raster of the kernel density estimation and the cost-optimal paths will be returned.
-#' @examples
-#' \dontrun{
-#' # Create cost surface
-#' cost_surface <- almmr::create_cost_surface(dem, slopeGainFactor=TRUE)
-#' site <- terra::vect(cbind(530681, 5326949))
-#' terra::crs(site) <- cost_surface@srs
-#'
-#' # Perform TPLA
 
-#' tpla_result <- almmr::perform_tpla(cost_surface, site, 4500, 50, 200)
-#' plot(tpla_result)
-#' plot(site, add=T)
-#'
-#'
-#' Optional:
-#' dem_hill <- almmr::create_hillshade(dem)
-#' plot(dem_hill, col = gray.colors(100), main = "TPLA Results with Hillshade", legend = FALSE)
-#' plot(tpla_result, add = TRUE, col = hcl.colors(100, "YlOrRd"))
-#' plot(site, add=T)
-#' }
 
 perform_tpla <- function(cost_surface,
                          center_point,
