@@ -67,7 +67,7 @@ create_cost_surface <- function(
   alt_diff <- function(x) x[2] - x[1]
 
   # Base slope transition and geo-correction
-  slope_trans <- gdistance::transition(r_dem, alt_diff, numberOfNeighbors, symm = FALSE, na.rm = FALSE)
+  slope_trans <- gdistance::transition(r_dem, alt_diff, numberOfNeighbors, symm = FALSE)
   slope <- gdistance::geoCorrection(slope_trans)
 
   # --- Apply slope gain / barrier modifications ------------------------------
