@@ -15,6 +15,7 @@
 #' @param wd Directory in which the polygons and any raster data can be saved. Optional.
 #' @param costFunction Cost-Function. Possible: "ToblersHikingFunction"
 #' @return Polygon-Shapefile. Optional: Raster TIFF
+#' @export
 
 lcsc_territory <- function(dem,
                            sites,

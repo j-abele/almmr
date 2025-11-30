@@ -17,7 +17,7 @@
 #' @param steps_points Integer. The number of steps (normaly in Meter) for sampling points along the lines.
 #' @param max_speed Numeric. The maximum speed (optional, can be refined based on use case).
 #' @return A SpatialLinesDataFrame object with the calculated routes.
-#'
+#' @export
 
 sbr_network <- function(sites, lines, conductance, steps_points, max_speed) {
   # Überprüfen und ggf. Konvertieren der Eingabedaten
