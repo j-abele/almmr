@@ -25,7 +25,7 @@ library(sf)
 
 ------------------------------------------------------------------------
 
-## First step – Cost Surface Generation
+## First (basic) step – Cost Surface Generation (run always first!)
 
 ``` r
 # Load DEM and create hillshade
@@ -36,6 +36,7 @@ hs <- almmr::create_hillshade(r)
 # Create cost surface using Tobler's Hiking Function
 cs <- almmr::create_cost_surface(
   dem = r,
+  epsg = "25832",
   costFunction = "ToblersHikingFunction"
 )
 
@@ -46,43 +47,66 @@ plot(raster::raster(cs), add = TRUE, alpha = 0.5)
 
 ------------------------------------------------------------------------
 
-## TPLA (Least-Cost Path Analysis)
+## TPLA (Total Passability Landscape Analysis)
+
+TPLA stands for Total Passability Landscape Analysis. With the help of
+least-cost paths and a density calculation, regions with high route or
+movement potential are calculated within a circular analysis area.
 
 ``` r
-# Generate random start and end points within the DEM extent
-set.seed(42)
-pts <- sf::st_sample(sf::st_as_sf(terra::as.polygons(r)), 2)
-names(pts) <- c("start", "end")
+# Heuneburg as center Point
+heuneburg <- terra::vect(cbind(530657,5326988))
 
-# Compute least-cost path
-path <- almmr::perform_tpla_line_based(
+# -- CRS handling 
+# Get CRS from DEM in proj4 format for compatibility with raster/gdistance
+epsg <- sf::st_crs(terra::crs(r))$proj4string
+
+# Apply to DEM, Point and Cost Surface (for safety)
+raster::crs(r) <- epsg
+raster::crs(heuneburg) <- epsg
+raster::crs(cs) <- epsg
+
+# Compute Total Passability Landscape Analysis for Heuneburg micro-region
+tpla_heune <- almmr::perform_tpla(
   cost_surface = cs,
-  start_point = pts[1],
-  end_point = pts[2]
+  center_point = heuneburg,
+  radius_tpla = 4700,
+  number_of_points = 30,
+  sigma_density_calc = 90,
+  keep_lines = FALSE
 )
 
 # Plot path on hillshade
-plot(hs, col = gray.colors(256, 0.1, 1), legend = FALSE, main = "Least-Cost Path (TPLA)")
-plot(path, col = "red", lwd = 2, add = TRUE)
-plot(pts, col = c("blue", "darkgreen"), pch = 16, add = TRUE)
-legend("topleft", legend = c("Start", "End", "Least-cost path"),
-       col = c("blue", "darkgreen", "red"), lty = c(NA, NA, 1),
-       pch = c(16, 16, NA), bg = "white")
+plot(hs, col = gray.colors(256, 0.1, 1), legend = FALSE, main = "Total Passability Landscape Analysis")
+# Mask out cells with near-zero values (remove low-density / non-passable areas)
+tpla_heune_mask <- terra::mask(tpla_heune, tpla_heune > 0.04, maskvalues = FALSE)
+plot(tpla_heune_mask, add = TRUE, alpha = 0.7)
+plot(heuneburg, col = "red", pch = 16, add = TRUE)
 ```
 
 ------------------------------------------------------------------------
 
 ## LCSC Territory - Potential settlement area
 
+The function generates theoretical territories or catchment areas based
+on a cost surface for one or more locations. The catchment areas are
+calculated on the basis of a certain period of time, which, starting
+from a central location, the movement can take place in all directions
+depending on the costs.
+
 ``` r
 # Create 10 random settlement points
 set.seed(7)
 points_sf <- sf::st_sample(sf::st_as_sf(terra::as.polygons(r)), 10)
+points_sf <-  terra::vect(points_sf)
+
 
 # Run LCSC territory clustering
 territories <- lcsc_territory(
-  points_sf,
   dem = r,
+  sites = points_sf,
+  movement_time = 5,
+  max_speed = 6,
   epsg = "EPSG:25832"
 )
 
@@ -96,30 +120,48 @@ plot(points_sf, col = "black", pch = 16, add = TRUE)
 
 ## SBR_network - Site-based (theoretical) route network (sbr_network)
 
+The `sbr_network()` function constructs a theoretical route network
+between given site points based on the underlying cost surface. The
+selection of the next neighboring site is determined iteratively using
+accumulated cost surfaces, connecting locations via the least-cost paths
+and thus simulating potential communication or movement corridors within
+a landscape.
+
+⚠️ **Note:** This is a computationally intensive process.  
+Even with the small example DEM included in this package, depending on
+your hardware and the sampling density (`steps_points`), it may take
+several minutes to complete.  
+So it’s a good idea to grab a coffee and let R do the heavy lifting ☕.
+
 ``` r
-# Create 20 random points in the DEM extent
-set.seed(9)
-network_pts <- sf::st_sample(sf::st_as_sf(terra::as.polygons(r)), 20)
+# Create 10 random points in the DEM extent
+set.seed(7)
+network_pts <- sf::st_sample(sf::st_as_sf(terra::as.polygons(r)), 10)
+network_pts <-  terra::vect(network_pts)
+
+# random shortest path for reference line
+plot(hs, col = gray.colors(256, 0.1, 1), legend = FALSE, main = "SBR Network and Shortest Path")
+plot(network_pts, col = "black", pch = 16, add = TRUE)
+# reference points for shortest path
+plot(network_pts[c(2,4)], col = "green", pch = 16, add = TRUE)
+
+sp1 <- gdistance::shortestPath(cs, as(network_pts[2], "Spatial"), as(network_pts[4], "Spatial"), output = "SpatialLines")
+
+# add to plot
+plot(sp1, col = "black", add = TRUE)
 
 # Build spatial boundary reconstruction (SBR) network
-sbr_net <- sbr_network(
-  points = network_pts,
-  cost_surface = cs
+sbr_net <- almmr::sbr_network(
+  sites = as(network_pts[-c(2,4)], "Spatial"),
+  lines = sp1,
+  conductance = cs,
+  steps_points = 50
 )
 
-# Select two random nodes for shortest path visualization
-nodes <- sample(1:length(network_pts), 2)
-sp <- sbr_shortest_path(
-  sbr_net,
-  from = nodes[1],
-  to = nodes[2]
-)
 
 # Plot network and shortest path on hillshade
-plot(hs, col = gray.colors(256, 0.1, 1), legend = FALSE, main = "SBR Network and Shortest Path")
-plot(sbr_net, col = "darkgray", add = TRUE)
-plot(sp, col = "red", lwd = 2, add = TRUE)
-plot(network_pts, col = "black", pch = 16, add = TRUE)
+plot(sbr_net, col = "darkgreen", add = TRUE)
+
 ```
 
 ------------------------------------------------------------------------
