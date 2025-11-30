@@ -32,11 +32,19 @@ lcsc_territory <- function(dem,
 
   # Überprüfung der Eingaben
   stopifnot(is.numeric(movement_time), is.numeric(max_speed))
+
   if (!inherits(dem, c("RasterLayer", "SpatRaster"))) {
     stop("The 'dem' must be a RasterLayer or SpatRaster.")
   }
   if (is.null(wd) && (write_raster || write_polygon)) {
     warning("No working directory specified (wd = ). The process will continue without saving files locally.")
+  }
+
+  if (inherits(sites, "sf")) {
+    sites <- terra::vect(sites)
+  }
+  if (!inherits(sites, "SpatVector")) {
+    stop("'sites' must be of class SpatVector or sf.")
   }
 
   # Initialisierung
@@ -46,7 +54,9 @@ lcsc_territory <- function(dem,
   # max_possible_distance is used for dem clipping before cost-surface calculaiton to speed up process
   max_possible_distance <- ((max_speed * 1000) / 3600) * (movement_time * 60) + (terra::res(rast(dem))[1] * 3)
 
-  for (i in 1:nrow(sites)) {
+  # Compatible with sf, data.frame, and SpatVector
+  n_sites <- if ("SpatVector" %in% class(sites)) terra::nrow(sites) else nrow(sites)
+  for (i in seq_len(n_sites)) {
     #buffer
     site <- sites[i,]
     # Generierung eines Namens: Entweder basierend auf dem name_index oder fortlaufend nummeriert

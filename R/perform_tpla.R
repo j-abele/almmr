@@ -2,7 +2,6 @@
 #'
 #' TPLA stands for Total Passability Landscape Analysis. With the help of least-cost paths and a density calculation,
 #' regions with high route or movement potential are calculated within a circular analysis area.
-#' Placeholder: Description to follow (suggestions for research-area, number of points, Spatial-classes etc.)
 #'
 #' @param cost_surface Transition Object. Cost surface (Class: Transition, calculated with the gdistance package)
 #' @param center_point Center point of the study area. Class of SpatVector (terra).
