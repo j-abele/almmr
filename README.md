@@ -31,7 +31,7 @@ library(sf)
 # Load DEM and create hillshade
 data(dem)
 r <- dem()
-hs <- almmr::create_hillshade(dem)
+hs <- almmr::create_hillshade(r)
 
 # Create cost surface using Tobler's Hiking Function
 cs <- almmr::create_cost_surface(
