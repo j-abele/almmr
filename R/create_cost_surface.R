@@ -4,9 +4,8 @@
 #' different cost functions and optional barrier or wetland factors.
 #'
 #' @param dem Raster. Digital elevation data. Best as class SpatRaster; sp, sf and raster objects may also work.
-#' @param epsg EPSG-Code as string (e.g. "EPSG:25832"). Currently not used internally.
 #' @param numberOfNeighbors Whole number. Number of neighbours to be considered when calculating slope (16 is default).
-#' @param numberOfDirections Whole number. Number of neighbours for cost surface calculation (4, 8 or 16).
+#' @param numberOfDirections Whole number. Number of neighbours for cost surface calculation (4, 8, 16, 32, 48).
 #' @param slopeGainFactor Logical. Default FALSE. If TRUE, a quadratic function starting at \code{slopeGainStart} will be used.
 #' @param slopeGainStart Numeric. Start slope value of the quadratic function in slope m (e.g. 0.1 for 10% slope).
 #' @param slopeBarrier Logical. Default FALSE. If TRUE, slopes higher than \code{slopeBarrierValue} get NA values (not passable).
@@ -21,7 +20,6 @@
 #' @export
 create_cost_surface <- function(
     dem,
-    epsg = NULL, # e.g. "EPSG:25832"
     numberOfNeighbors = 16,
     numberOfDirections = 16,
     slopeGainFactor = FALSE,
@@ -36,110 +34,153 @@ create_cost_surface <- function(
 ) {
 
   # --- Input validation -------------------------------------------------------
-  stopifnot(inherits(dem, "SpatRaster"))
-  stopifnot(numberOfDirections %in% c(4, 8, 16))
-  stopifnot(costFunction %in% c("ToblersHikingFunction", "Irmischer-Clarke's", "Wheeled-Vehicels"))
+  # DEM-format check
+  if (!inherits(dem, "SpatRaster"))
+    stop("'dem' must be a SpatRaster. Convert with terra::rast() first.")
+
+  # projection check
+  if (terra::is.lonlat(dem))
+    stop(
+      "Geographic (lon/lat) CRS detected. ",
+      "Please provide a projected DEM (e.g. UTM). ",
+      "Use terra::project() to reproject first."
+    )
+
+  # Number of neighbours for cost surface calculation: 4, 8, 16, 32, 48
+  if (!numberOfDirections %in% c(4, 8, 16, 32, 48))
+    stop("'numberOfDirections' must be one of: 4, 8, 16, 32, 48.")
+
+  # Number of neighbours for slope:  4, 8, 16
+  if (!numberOfNeighbors %in% c(4, 8, 16))
+    stop("'numberOfNeighbors' must be one of: 4, 8, 16.")
+
+  # cost-function check
+  valid_funs <- c("ToblersHikingFunction", "Irmischer-Clarke's", "Wheeled-Vehicels")
+  if (!costFunction %in% valid_funs)
+    stop(paste("'costFunction' must be one of:",
+               paste(valid_funs, collapse = ", ")))
+
+  # Barrier-/Wetland formats check
+  if (!is.null(barriers) && !inherits(barriers, "SpatVector"))
+    stop("'barriers' must be a SpatVector.")
+  if (!is.null(wetlands) && !inherits(wetlands, "SpatVector"))
+    stop("'wetlands' must be a SpatVector.")
+
+  # check depencies
+  if (slopeBarrier && is.null(slopeBarrierValue))
+    stop("'slopeBarrierValue' must be set when 'slopeBarrier = TRUE'.")
+  if (slopeGainFactor && is.null(slopeGainStart))
+    stop("'slopeGainStart' must be set when 'slopeGainFactor = TRUE'.")
 
   # --- Barrier and wetland transitions ---------------------------------------
+
   if (!is.null(barriers)) {
-    barriers_r <- terra::rasterize(barriers, dem, field = 0, background = 1)
-    barriers_TR <- gdistance::transition(
-      raster::raster(barriers_r),
-      transitionFunction = min,
-      directions = numberOfDirections
-    )
+    if (!terra::same.crs(barriers, dem)) {
+      barriers <- terra::project(barriers, dem)
+    }
+    barriers_r <- terra::rasterize(barriers, dem, field = 1L, background = 0L)
   }
 
   if (!is.null(wetlands)) {
-    wetlands_r <- terra::rasterize(wetlands, dem, field = 1 / wetlandsFactor, background = 1)
-    wetlands_TR <- gdistance::transition(
-      raster::raster(wetlands_r),
-      transitionFunction = min,
-      directions = numberOfDirections
-    )
+    if (!terra::same.crs(wetlands, dem)) {
+      wetlands <- terra::project(wetlands, dem)
+    }
+    wetlands_r <- terra::rasterize(wetlands, dem, field = 1L, background = 0L)
   }
 
   # --- Slope transition object ------------------------------------------------
-  # Convert SpatRaster (terra) to RasterLayer (raster) for gdistance
-  r_dem <- raster::raster(dem)
+  # Valid cells (excluding NA)
+  vals      <- terra::values(dem, mat = FALSE)
+  valid     <- which(!is.na(vals))
 
-  # Altitude difference function for transition
-  alt_diff <- function(x) x[2] - x[1]
+  # Neighbour pairs for slope calculation
+  adj_slope <- terra::adjacent(dem, cells = valid,
+                               directions = numberOfNeighbors,
+                               pairs = TRUE)
 
-  # Base slope transition and geo-correction
-  slope_trans <- gdistance::transition(r_dem, alt_diff, numberOfNeighbors, symm = FALSE)
-  slope <- gdistance::geoCorrection(slope_trans)
+  # Keep only pairs where both cells have values
+  adj_slope <- adj_slope[!is.na(vals[adj_slope[, 2]]), ]
+
+  # Euclidean distance between cell centroids (geo-correction)
+  xy   <- terra::xyFromCell(dem, seq_len(terra::ncell(dem)))
+  dx   <- xy[adj_slope[, 2], 1] - xy[adj_slope[, 1], 1]
+  dy   <- xy[adj_slope[, 2], 2] - xy[adj_slope[, 1], 2]
+  dist <- sqrt(dx^2 + dy^2)
+
+  # Slope as rise/run (directed: uphill and downhill differ)
+  dz    <- vals[adj_slope[, 2]] - vals[adj_slope[, 1]]
+  slope <- dz / dist
 
   # --- Apply slope gain / barrier modifications ------------------------------
-  m_slope <- gdistance::transitionMatrix(slope)
 
-  # Apply slope gain factor (quadratic increase beyond threshold)
+  # Apply quadratic penalty to slopes steeper than threshold
   if (slopeGainFactor) {
-    m_slope@x <- ifelse(
-      abs(m_slope@x) > slopeGainStart,
-      sign(m_slope@x) * ((abs(m_slope@x) / slopeGainStart)^2) * slopeGainStart,
-      m_slope@x
-    )
+    steep <- abs(slope) > slopeGainStart
+    slope[steep] <- sign(slope[steep]) *
+      ((abs(slope[steep]) / slopeGainStart)^2) * slopeGainStart
   }
 
-  # Apply slope barrier (cells above threshold become impassable)
+  # Set slopes steeper than threshold to NA (impassable)
   if (slopeBarrier) {
-    m_slope@x <- ifelse(abs(m_slope@x) > slopeBarrierValue, NA, m_slope@x)
+    slope[abs(slope) > slopeBarrierValue] <- NA
   }
-
-  # Put the modified matrix back into the existing TransitionLayer
-  slope@transitionMatrix <- m_slope
 
   # --- Cost surface calculation ----------------------------------------------
-  # Start from the modified slope transition
-  speed <- slope
+  # Convert slope to travel speed (m/s) using the chosen cost function
+  speed_ms <- switch(costFunction,
+                     "ToblersHikingFunction" = {
+                       # Tobler's Hiking Function: speed in km/h, converted to m/s
+                       6 * exp(-3.5 * abs(slope + 0.05)) * (1000 / 3600)
+                     },
+                     "Irmischer-Clarke's" = {
+                       # Irmischer-Clarke on-path male: speed in km/h, converted to m/s
+                       (0.11 + exp(-(abs(slope) * 100 + 5)^2 / (2 * 30^2))) * 3.6 * (1000 / 3600)
+                     },
+                     "Wheeled-Vehicels" = {
+                       # Wheeled vehicles: dimensionless cost factor based on critical slope
+                       1 / (1 + ((abs(slope) * 100) / critical_slope)^2)
+                     }
+  )
 
-  if (costFunction == "ToblersHikingFunction") {
-    # Tobler's Hiking Function: speed in km/h
-    m_speed <- gdistance::transitionMatrix(slope)
-    m_speed@x <- 6 * exp(-3.5 * abs(m_speed@x + 0.05))
-
-    # Convert to m/s
-    m_speed_ms <- m_speed
-    m_speed_ms@x <- m_speed@x * 0.278
-
-    speed@transitionMatrix <- m_speed_ms
-    cost_surface <- gdistance::geoCorrection(speed)
-  }
-
-  if (costFunction == "Irmischer-Clarke's") {
-    # Irmischer/Clarke on-path male in km/h
-    m_speed <- gdistance::transitionMatrix(slope)
-    m_speed@x <- (0.11 + exp(-(abs(m_speed@x) * 100 + 5)^2 / (2 * 30^2))) * 3.6
-
-    # Convert to m/s
-    m_speed_ms <- m_speed
-    m_speed_ms@x <- m_speed@x * 0.278
-
-    speed@transitionMatrix <- m_speed_ms
-    cost_surface <- gdistance::geoCorrection(speed)
-  }
-
-  if (costFunction == "Wheeled-Vehicels") {
-    # Wheeled vehicles: cost factor based on critical slope
-    m_speed <- gdistance::transitionMatrix(slope)
-    m_speed@x <- 1 / (1 + ((abs(m_slope@x) * 100) / critical_slope)^2)
-
-    speed@transitionMatrix <- m_speed
-    cost_surface <- gdistance::geoCorrection(speed)
-  }
+  # Edge weight = travel time in seconds (distance / speed)
+  # NA slopes (from slopeBarrier) propagate naturally to NA weights
+  weight <- dist / speed_ms
 
   # --- Apply wetlands and barriers -------------------------------------------
+  # Increase travel time in wetland cells (reduce speed by wetlandsFactor)
   if (!is.null(wetlands)) {
-    wetlands_TR <- raster::resample(wetlands_TR, cost_surface)
-    cost_surface <- cost_surface * wetlands_TR
+    wetland_cells        <- terra::values(wetlands_r, mat = FALSE) == 1L
+    weight[wetland_cells[adj_slope[, 1]]] <-
+      weight[wetland_cells[adj_slope[, 1]]] * wetlandsFactor
   }
 
+  # Set travel time to NA in barrier cells (impassable)
   if (!is.null(barriers)) {
-    barriers_TR <- raster::resample(barriers_TR, cost_surface)
-    cost_surface <- barriers_TR * cost_surface
+    barrier_cells        <- terra::values(barriers_r, mat = FALSE) == 1L
+    weight[barrier_cells[adj_slope[, 1]] |
+             barrier_cells[adj_slope[, 2]]] <- NA
   }
 
-  # --- Return final cost surface ---------------------------------------------
-  return(cost_surface)
+  # Return almmr_cs object (recipe + weights, no graph built yet)
+  structure(
+    list(
+      dem     = dem,
+      adj     = adj_slope,
+      weights = weight,
+      params  = list(
+        cost_function      = costFunction,
+        directions         = numberOfDirections,
+        slope_neighbors    = numberOfNeighbors,
+        slope_gain         = slopeGainFactor,
+        slope_gain_start   = slopeGainStart,
+        slope_barrier      = slopeBarrier,
+        slope_barrier_value = slopeBarrierValue,
+        wetlands           = wetlands,
+        wetlands_factor    = wetlandsFactor,
+        barriers           = barriers,
+        critical_slope     = critical_slope
+      )
+    ),
+    class = "almmr_cs"
+  )
 }
