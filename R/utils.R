@@ -86,7 +86,8 @@ load_dem <- function() {
   # Required because igraph expects consecutive IDs starting at 1,
   # but cell indices may have gaps after extent clipping
   unique_cells <- unique(as.integer(adj))
-  cell_to_node <- integer(max(unique_cells))
+  # Ensure cell_to_node covers the full DEM cell range
+  cell_to_node <- integer(terra::ncell(cs$dem))  # volle DEM-Größe!
   cell_to_node[unique_cells] <- seq_along(unique_cells)
 
   # Translate edge list from cell indices to node IDs
