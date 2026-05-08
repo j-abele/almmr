@@ -3,13 +3,31 @@
 #' TPLA stands for Total Passability Landscape Analysis. With the help of least-cost paths and a density calculation,
 #' regions with high route or movement potential are calculated within a circular analysis area.
 #'
-#' @param cost_surface Transition Object. Cost surface (Class: Transition, calculated with the gdistance package)
-#' @param center_point Center point of the study area. Class of SpatVector (terra).
-#' @param radius_tpla Integer. Radius for the circle of starting points (in meters), in wich tpla will take place.
-#' @param number_of_points Integer. Number of starting points on the circle.
-#' @param sigma_density_calc Number. Standard deviation for the kernel density estimation.
-#' @param keep_lines TRUE or FALSE. Default is FALSE. If TRUE, the cost-optimal paths will be included in the result object.
-#' @return List or raster. If keep_lines = TRUE, a list object containing the result raster of the kernel density estimation and the cost-optimal paths will be returned.
+#' @param cost_surface almmr_cs object from \code{create_cost_surface()}.
+#'   Supports both eager (\code{lazy = FALSE}) and lazy (\code{lazy = TRUE})
+#'   modes. In lazy mode the graph is built on demand for the buffer extent of the LCP
+#'   only, recommended for large DEMs.
+#' @param center_point Center point of the study area. SpatVector (terra).
+#'   Will be reprojected automatically if CRS differs from cost surface.
+#' @param radius_tpla Numeric. Radius in meters for the circle of starting
+#'   points around the center point.
+#' @param number_of_points Integer. Number of starting points sampled
+#'   regularly along the circle. At least 25 recommended.
+#' @param sigma_density_calc Numeric. Standard deviation in meters for the
+#'   kernel density estimation applied to the least-cost paths.
+#' @param keep_lines Logical. Default FALSE. If TRUE, the least-cost paths
+#'   are included in the result as an sf object.
+#' @return SpatRaster with kernel density values, or a named list with
+#'   elements \code{density} (SpatRaster) and \code{lines} (sf) if
+#'   \code{keep_lines = TRUE}.
+#' @param resolutions Numeric vector. DEM resolutions in meters for
+#'   hierarchical refinement, ordered coarse to fine
+#'   (e.g. \code{c(500, 250)}). The original DEM resolution is always
+#'   used as the final step. \code{NULL} skips hierarchical refinement.
+#'   Passed directly to \code{compute_lcp()}.
+#' @param corridor_factor Numeric. Buffer multiplier for corridor between
+#'   hierarchical iterations. Corridor width = \code{corridor_factor *
+#'   resolution}. Default 5. Passed directly to \code{compute_lcp()}.
 #' @export
 
 perform_tpla <- function(cost_surface,
@@ -17,7 +35,9 @@ perform_tpla <- function(cost_surface,
                          radius_tpla,
                          number_of_points,
                          sigma_density_calc,
-                         keep_lines=FALSE) {
+                         keep_lines      = FALSE,
+                         resolutions     = NULL,
+                         corridor_factor = 5) {
 
   # Convert center_point to SpatVector if needed
   if (!inherits(center_point, "SpatVector")) {
@@ -67,11 +87,16 @@ perform_tpla <- function(cost_surface,
     ))
 
   # Check for starting points in NA regions (barriers or edge of DEM)
-  # Use mean outgoing weight per cell as proxy for passability
-  avg_weights <- tapply(cost_surface$weights, cost_surface$adj[, 1], mean, na.rm = FALSE)
-  passable    <- terra::rast(cost_surface$dem)
-  terra::values(passable) <- NA
-  terra::values(passable)[as.integer(names(avg_weights))] <- avg_weights
+  if (isTRUE(cost_surface$params$lazy)) {
+    # Lazy mode: use DEM elevation as proxy - NA = outside DEM or no-data
+    passable <- cost_surface$dem
+  } else {
+    # Eager mode: use mean outgoing weight per cell as passability proxy
+    avg_weights <- tapply(cost_surface$weights, cost_surface$adj[, 1], mean, na.rm = FALSE)
+    passable    <- terra::rast(cost_surface$dem)
+    terra::values(passable) <- NA
+    terra::values(passable)[as.integer(names(avg_weights))] <- avg_weights
+  }
 
   count_start_points       <- nrow(start_points)
   start_points$cost_value  <- terra::extract(passable, start_points)[, 2]
@@ -84,14 +109,9 @@ perform_tpla <- function(cost_surface,
     ))
   }
 
-  # Build graph once for the full buffer extent (lazy)
-  # Use center point buffer as extent - guarantees all circle points are included
-  graph_obj <- .build_graph(
-    cost_surface,
-    ext = terra::ext(terra::buffer(center_point, radius_tpla + terra::res(cost_surface$dem)[1] * 3))
-  )
-
-  # build spiders-web :)
+  # Compute least-cost paths between all starting points via compute_lcp()
+  # compute_lcp() handles lazy/eager mode, hierarchical refinement and
+  # DEM clipping internally - no manual graph management needed here
   sp_paths <- lapply(seq_len(nrow(start_points)), function(i) {
     start         <- start_points[i]
     target_points <- start_points[-i]
@@ -101,51 +121,31 @@ perform_tpla <- function(cost_surface,
     target_points <- terra::erase(target_points,
                                   terra::buffer(start, min_dist + min_dist / 2))
 
-    # Translate start cell to node ID
-    start_cell <- terra::cellFromXY(cost_surface$dem, terra::crds(start))
-    start_node <- graph_obj$cell_to_node[start_cell]
+    if (nrow(target_points) == 0) return(NULL)
 
-    # Translate target cells to node IDs
-    target_cells <- terra::cellFromXY(cost_surface$dem, terra::crds(target_points))
-    target_nodes <- graph_obj$cell_to_node[target_cells]
-
-    # Remove targets that fall outside the clipped graph (node ID = 0)
-    target_nodes <- target_nodes[target_nodes > 0]
-    if (length(target_nodes) == 0) return(NULL)
-
-    # Compute shortest paths from start to all targets
-    paths <- igraph::shortest_paths(
-      graph_obj$graph,
-      from    = start_node,
-      to      = target_nodes,
-      weights = igraph::E(graph_obj$graph)$weight,
-      output  = "vpath"
-    )
-
-    # returns coordinate matrix, no sf object
-    lapply(paths$vpath, function(path) {
-      if (length(path) < 2) return(NULL)
-      cells  <- graph_obj$node_to_cell[as.integer(path)]
-      coords <- terra::xyFromCell(cost_surface$dem, cells)
-      # Return plain matrix - sf objects built later to avoid nested list issues
-      coords
+    # Compute LCP from start to each target point
+    lapply(seq_len(nrow(target_points)), function(j) {
+      tryCatch(
+        compute_lcp(
+          dem             = cost_surface$dem,
+          origin          = start,
+          destination     = target_points[j],
+          cs_params       = cost_surface$params,
+          initial_buffer  = radius_tpla,
+          resolutions     = resolutions,
+          corridor_factor = corridor_factor
+        ),
+        error = function(e) NULL  # skip unreachable targets silently
+      )
     })
   })
 
-  # Collect all coordinate matrices and remove NULLs
-  all_coords <- Filter(Negate(is.null),
-                       do.call(c, sp_paths))
+  # Flatten, remove NULLs and combine into single sf object
+  all_paths    <- Filter(Negate(is.null), unlist(sp_paths, recursive = FALSE))
+  merged_lines <- do.call(rbind, all_paths)
 
-  # Build sf object from coordinate matrices
-  merged_lines <- sf::st_sf(
-    geometry = sf::st_sfc(
-      lapply(all_coords, sf::st_linestring),
-      crs = terra::crs(cost_surface$dem)
-    )
-  )
-
-  # Extract segment endpoints from sf lines directly
-  # sf geometries are already coordinate matrices - no S4 slot access needed
+  # Extract segment endpoints from sf lines
+  # merged_lines is now a multi-row sf object - one feature per path
   coords_list <- lapply(sf::st_geometry(merged_lines), function(line) {
     coords <- sf::st_coordinates(line)[, 1:2]
     list(

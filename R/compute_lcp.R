@@ -35,9 +35,15 @@
 #'   passed to \code{perform_tpla()}, \code{lcsc_territory()}, or
 #'   \code{sbr_network()} in the same workflow, avoiding redundant
 #'   computation. Mutually exclusive with \code{cs_params}.
-#' @param initial_buffer Numeric. Buffer around origin and destination
-#'   in meters for DEM clipping. Should be large enough to capture
-#'   potential detours. Default 2000.
+#' @param initial_buffer Numeric. Optional absolute buffer in meters
+#'   around origin and destination for the initial DEM clip. If set,
+#'   takes precedence over \code{initial_buffer_factor}. Recommended
+#'   for direct calls where the expected detour distance is known.
+#' @param initial_buffer_factor Numeric. Buffer as a fraction of the
+#'   straight-line distance between origin and destination. Default 0.3
+#'   (30\%). Used when \code{initial_buffer} is NULL. Recommended for
+#'   \code{perform_tpla()} and other functions where detour distance
+#'   scales with path length.
 #' @param resolutions Numeric vector. DEM resolutions in meters for
 #'   hierarchical refinement, ordered coarse to fine
 #'   (e.g. \code{c(500, 250)}). The original DEM resolution is always
@@ -134,13 +140,14 @@ compute_lcp <- function(
     dem,
     origin,
     destination,
-    cs_params       = NULL,
-    cs              = NULL,
-    initial_buffer  = 2000,
-    resolutions     = NULL,
-    corridor_factor = 5,
-    bidirectional   = FALSE,
-    output          = "path"
+    cs_params             = NULL,
+    cs                    = NULL,
+    initial_buffer        = NULL,
+    initial_buffer_factor = 0.3,
+    resolutions           = NULL,
+    corridor_factor       = 5,
+    bidirectional         = FALSE,
+    output                = "path"
 ) {
 
   # ---------------------------------------------------------------------------
@@ -237,6 +244,13 @@ compute_lcp <- function(
   # are captured - the optimal path may initially move away from the
   # destination before reaching it.
   # ---------------------------------------------------------------------------
+  # Compute initial buffer - absolute value takes precedence over factor
+  straight_dist  <- as.numeric(sf::st_distance(
+    sf::st_as_sf(origin),
+    sf::st_as_sf(destination)
+  ))
+  buf <- if (!is.null(initial_buffer)) initial_buffer else straight_dist * initial_buffer_factor
+
   clip_extent <- terra::convHull(
     terra::buffer(
       terra::vect(
@@ -244,12 +258,10 @@ compute_lcp <- function(
         type = "points",
         crs  = terra::crs(dem)
       ),
-      initial_buffer
+      buf
     )
   )
-
-  # Clip DEM to convex hull extent
-  dem_clip <- terra::crop(dem, clip_extent, mask = TRUE)
+  dem_clip <- terra::crop(dem, clip_extent)
 
   # Check that both points fall within the clipped DEM
   if (any(is.na(terra::extract(dem_clip, origin)[, 2])) ||
@@ -266,18 +278,20 @@ compute_lcp <- function(
   # ---------------------------------------------------------------------------
   .compute_single_lcp <- function(dem_input, from, to) {
 
-    if (!is.null(cs)) {
+    if (!is.null(cs) && !isTRUE(cs$params$lazy)) {
       # Eager mode: clip pre-computed adj/weights to dem_input extent
       graph_obj <- .build_graph(cs, ext = terra::ext(dem_input))
     } else {
       # Lazy mode: build graph from scratch on clipped DEM
+      params_lazy        <- cs_params
+      params_lazy$lazy   <- TRUE   # make sure lazy
       cs_clip <- structure(
         list(
           dem     = dem_input,
           adj     = NULL,
           weights = NULL,
-          params  = c(cs_params, list(lazy = TRUE))
-        ),
+          params  =  params_lazy
+          ),
         class = "almmr_cs"
       )
       graph_obj <- .build_graph(cs_clip)
@@ -370,7 +384,9 @@ compute_lcp <- function(
         sf::st_linestring(current_result$coords),
         crs = terra::crs(dem)
       )
-      corridor_width <- corridor_factor * res_levels[i - 1]
+      # Corridor based on next iteration resolution, not previous
+      # e.g. 250m path buffered by 5 * 50m = 250m for the 50m iteration
+      corridor_width <- corridor_factor * res_levels[i]
       corridor       <- sf::st_buffer(prev_path_sf, corridor_width)
 
       # Clip DEM to corridor and refine path
