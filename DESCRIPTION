@@ -25,6 +25,7 @@ Depends:
 Imports: 
     dplyr,
     gdistance,
+    igraph,
     raster,
     sf,
     sp,
