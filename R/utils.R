@@ -6,14 +6,14 @@
 #' @param direction Light direction
 #' @export
 #'
-  create_hillshade <- function(dem, angle = 45, direction = 315) {
-    if (!inherits(dem, "SpatRaster")) {
-      dem <- terra::rast(dem)
-    }
-    slope  <- terra::terrain(dem, "slope",  unit = "radians")
-    aspect <- terra::terrain(dem, "aspect", unit = "radians")
-    hill   <- terra::shade(slope, aspect, angle = angle, direction = direction)
-  }
+create_hillshade <- function(dem, angle = 45, direction = 315) {
+ if (!inherits(dem, "SpatRaster")) {
+   dem <- terra::rast(dem)
+   }
+  slope  <- terra::terrain(dem, "slope",  unit = "radians")
+  aspect <- terra::terrain(dem, "aspect", unit = "radians")
+  hill   <- terra::shade(slope, aspect, angle = angle, direction = direction)
+}
 
 
 
