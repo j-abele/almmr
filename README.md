@@ -58,13 +58,7 @@ cs <- almmr::create_cost_surface(
   dem          = r,
   costFunction = "ToblersHikingFunction"
 )
-
-# Plot the DEM underlying the cost surface on the hillshade
-plot(hs, col = gray.colors(256, 0.1, 1), legend = FALSE, main = "DEM / Cost Surface (Tobler)")
-plot(cs$dem, add = TRUE, alpha = 0.5)
 ```
-
-<img src="man/figures/README-cost-surface-1.png" alt="DEM of the Heuneburg region shown over a hillshade"  />
 
 ------------------------------------------------------------------------
 
