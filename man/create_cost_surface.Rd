@@ -6,7 +6,6 @@
 \usage{
 create_cost_surface(
   dem,
-  epsg = NULL,
   numberOfNeighbors = 16,
   numberOfDirections = 16,
   slopeGainFactor = FALSE,
@@ -17,38 +16,48 @@ create_cost_surface(
   wetlands = NULL,
   wetlandsFactor = 1.78,
   costFunction = "ToblersHikingFunction",
-  critical_slope = 10
+  critical_slope = 10,
+  lazy = FALSE
 )
 }
 \arguments{
-\item{dem}{Raster. Digital elevation data. Best as class SpatRaster; sp, sf and raster objects may also work.}
+\item{dem}{SpatRaster. Digital elevation data.}
 
-\item{epsg}{EPSG-Code as string (e.g. "EPSG:25832"). Currently not used internally.}
+\item{numberOfNeighbors}{Integer. Number of neighbours for slope calculation (4, 8, or 16).}
 
-\item{numberOfNeighbors}{Whole number. Number of neighbours to be considered when calculating slope (16 is default).}
+\item{numberOfDirections}{Integer. Number of neighbours for graph connectivity (4, 8, 16, 32, or 48).}
 
-\item{numberOfDirections}{Whole number. Number of neighbours for cost surface calculation (4, 8 or 16).}
+\item{slopeGainFactor}{Logical. Default FALSE. If TRUE, a quadratic penalty is
+applied to slopes steeper than \code{slopeGainStart}.}
 
-\item{slopeGainFactor}{Logical. Default FALSE. If TRUE, a quadratic function starting at \code{slopeGainStart} will be used.}
+\item{slopeGainStart}{Numeric. Slope threshold (rise/run) for quadratic penalty (e.g. 0.1 = 10 percent).}
 
-\item{slopeGainStart}{Numeric. Start slope value of the quadratic function in slope m (e.g. 0.1 for 10\% slope).}
+\item{slopeBarrier}{Logical. Default FALSE. If TRUE, slopes steeper than
+\code{slopeBarrierValue} become impassable.}
 
-\item{slopeBarrier}{Logical. Default FALSE. If TRUE, slopes higher than \code{slopeBarrierValue} get NA values (not passable).}
+\item{slopeBarrierValue}{Numeric. Slope threshold as ratio (e.g. 0.07 = 7 percent).}
 
-\item{slopeBarrierValue}{Numeric. Start slope value for barriers (e.g. 0.07 for 7\% slope).}
+\item{barriers}{SpatVector (Polygon). Impassable areas (e.g. rivers, lakes).}
 
-\item{barriers}{Polygon of class SpatVector. Area of barriers (e.g. rivers, lakes, political boundaries).}
+\item{wetlands}{SpatVector (Polygon). Areas with reduced movement speed.}
 
-\item{wetlands}{Polygon of class SpatVector. Area of wetlands/fens.}
+\item{wetlandsFactor}{Numeric. Speed reduction factor for wetlands (e.g. 1.78).}
 
-\item{wetlandsFactor}{Numeric. Factor of wetlands friction (e.g. 1.78); applied directly on speed (1 / wetlandsFactor).}
+\item{costFunction}{Character. One of \code{"ToblersHikingFunction"},
+\code{"Irmischer-Clarke's"}, \code{"Wheeled-Vehicels"}.}
 
-\item{costFunction}{Character. Cost function. Implemented: "ToblersHikingFunction", "Irmischer-Clarke's", "Wheeled-Vehicels".}
+\item{critical_slope}{Numeric. Critical slope in percent for \code{"Wheeled-Vehicels"}. Default 10.}
 
-\item{critical_slope}{Numeric. Critical slope in percent (only relevant for "Wheeled-Vehicels"). Default is 10.}
+\item{lazy}{Logical. Default FALSE. If TRUE, edge weights are not pre-computed.
+Instead, \code{.build_graph()} computes them on demand for the relevant extent only.
+Recommended for large DEMs and functions like \code{perform_tpla()} that operate
+on a spatial subset.}
 }
 \value{
-A \code{TransitionLayer} object representing the cost surface.
+An \code{almmr_cs} object containing the DEM and all parameters.
+In eager mode (\code{lazy = FALSE}), also contains pre-computed edge pairs
+and weights. Pass to \code{perform_tpla()}, \code{lcsc_territory()},
+and \code{sbr_network()}.
 }
 \description{
 Creates a cost surface based on a digital elevation model (DEM) using

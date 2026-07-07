@@ -1,0 +1,44 @@
+# Citation metadata for the almmr package.
+# Used by citation("almmr"). Update the placeholders <...> on release.
+
+# Fall back to DESCRIPTION metadata if 'meta' is not supplied by R.
+if (!exists("meta") || is.null(meta)) {
+  meta <- utils::packageDescription("almmr")
+}
+vers <- if (!is.null(meta$Version)) paste("R package version", meta$Version) else NULL
+
+citHeader(
+  "To cite almmr in publications, please cite both the software and the ",
+  "dissertation in which the underlying methods were developed:"
+)
+
+# --- The software itself ----------------------------------------------------
+bibentry(
+  bibtype  = "Manual",
+  title    = "almmr: Tools for Least-Cost Movement Modeling in Archaeological Landscapes",
+  author   = person("Jonas", "Abele",
+                    comment = c(ORCID = "0009-0008-1540-6202")),
+  year     = "2025",
+  note     = vers,
+  url      = "https://github.com/j-abele/almmr"
+)
+
+# --- The dissertation in which the methods originated ------------------------
+bibentry(
+  bibtype     = "PhdThesis",
+  title       = "Der „Fürstensitz“ Heuneburg in seinem regionalen Kontext. Eine landschaftsarchäologische Untersuchung zur Entwicklung hierarchischer Siedlungsstrukturen. Diss. Univ. Tübingen 2024",
+  author      = person("Jonas", "Abele"),
+  school      = "Tübingen",
+  year        = "2024",
+  note        = "unver. Dissertation"
+  # Add once available:
+  # , doi     = "<DOI>"
+)
+
+citFooter(
+  "The methodological approaches and their implementation as R functions are ",
+  "the author's own work, developed in the dissertation cited above (in part ",
+  "inspired by existing literature). After completion of the doctorate, AI ",
+  "(LLM) assistance was used for error checking, the migration from gdistance ",
+  "to a native terra/igraph implementation, and parts of the documentation."
+)

@@ -5,7 +5,7 @@
 \alias{dem}
 \title{Example Digital Elevation Model}
 \format{
-A function that returns a \code{\link[terra:SpatRaster-class]{SpatRaster}}.
+A function that returns a \code{\link[terra:SpatRaster]{SpatRaster}}.
 }
 \source{
 Landesamt für Geoinformation und Landentwicklung Baden-Württemberg

@@ -4,32 +4,48 @@
 \alias{sbr_network}
 \title{Site-based (theoretical) route network (sbr_network)}
 \usage{
-sbr_network(sites, lines, conductance, steps_points, max_speed)
+sbr_network(sites, lines, cost_surface, steps_points = 500, max_speed = 6)
 }
 \arguments{
-\item{sites}{SpatialPointsDataFrame or compatible object. The site locations.}
+\item{sites}{sf or SpatVector. Point locations of the sites. Reprojected to
+the cost surface CRS automatically if needed.}
 
-\item{lines}{SpatialLinesDataFrame. The base lines to start from (known route).}
+\item{lines}{sf or SpatVector. Base line(s) of the known route to start from.}
 
-\item{conductance}{Transition Layer. Cost surface (gidstance).}
+\item{cost_surface}{almmr_cs object from \code{create_cost_surface(lazy = FALSE)}.
+An eager cost surface is required, as network-wide distances are computed
+repeatedly on a single graph.}
 
-\item{steps_points}{Integer. The number of steps (normaly in Meter) for sampling points along the lines.}
+\item{steps_points}{Numeric. Spacing in meters for sampling waypoints along
+the current network in each iteration.}
 
-\item{max_speed}{Numeric. The maximum speed (optional, can be refined based on use case).}
+\item{max_speed}{Numeric. Retained for backward compatibility. Travel time is
+now derived directly from the cost surface, so this argument is currently
+informational only.}
 }
 \value{
-A SpatialLinesDataFrame object with the calculated routes.
+An sf object of LINESTRING geometries: the base line(s) plus one
+feature per connecting route, with columns \code{ID}, \code{dist_m},
+\code{time_minutes} and \code{connected_site}.
 }
 \description{
-Generates a theoretical route network based on site locations, a given route, based on conductance values.
-Strongly inspired by the least-cost network-to-builder process described by David Waugh in 2000 (Waugh 2000, 615, see also Herzog 2013, 239).
+Generates a theoretical route network based on site locations and a given
+route, using a cost surface. Each iteration connects the next unlinked site
+to the existing network via the least-cost path.
 }
 \details{
+Strongly inspired by the least-cost network-to-builder process described by
+David Waugh (2000, 615), see also Herzog (2013, 239).
+
+The former gdistance operators are replaced by graph operations on a single
+directed, weighted \code{igraph} built once from the cost surface:
+the accumulated cost from the network to each site and the cost to the
+nearest waypoint both use \code{igraph::distances()}, and each connecting
+route uses \code{igraph::shortest_paths()}.
+
 Literature:
 D. Waugh, Geography. An Integrated Approach. Third edition (Cheltenham 2000).
-
-I. Herzog, Least-cost Networks. In: G. Earl/T. Sly/A. Chrysanthi/P. Murrieta-Flores/C.
-Papadopoulos/I. Romanowska/D. Wheatley (Hrsg.), Archaeology in the Digital Era II. e-Papers
-from the 40th Conference on Computer Applications and Quantitative Methods in Archaeology
-(Amsterdam 2013) 237-248.
+I. Herzog, Least-cost Networks. In: G. Earl/T. Sly/A. Chrysanthi/P.
+Murrieta-Flores/C. Papadopoulos/I. Romanowska/D. Wheatley (Hrsg.),
+Archaeology in the Digital Era II (Amsterdam 2013), 237-248.
 }

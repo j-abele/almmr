@@ -7,7 +7,7 @@
 load_dem()
 }
 \value{
-A \code{\link[terra:SpatRaster-class]{SpatRaster}} object.
+A \code{\link[terra:SpatRaster]{SpatRaster}} object.
 }
 \description{
 Loads the example digital elevation model (DEM) that comes with the package.

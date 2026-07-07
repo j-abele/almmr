@@ -11,39 +11,60 @@ Baden-Württemberg, Germany, included with the package.
 
 ------------------------------------------------------------------------
 
+## Citation
+
+Please cite **almmr** if you use it in your research; run
+`citation("almmr")` in R or see `CITATION.cff` for the reference. The
+underlying dissertation may additionally be cited for the methodological
+background. —
+
 ## Installation
 
+**almmr** is installed from GitHub with the **devtools** package, so
+install that first if you don’t have it:
+
 ``` r
-# Install from GitHub
+# devtools is required to install from GitHub
+install.packages("devtools")
+
+# Install almmr from GitHub
 devtools::install_github("j-abele/almmr")
 
 library(almmr)
 library(terra)
-library(raster)
 library(sf)
 ```
 
 ------------------------------------------------------------------------
 
-## First (basic) step – Cost Surface Generation (run always first!)
+## Cost Surface Generation
+
+Most analyses build a cost surface first with create_cost_surface() and
+pass the resulting almmr_cs object on; this is required for
+perform_tpla(), perform_tpla_line_based() and sbr_network(). Others
+build it internally from the DEM — lcsc_territory(), for instance, only
+needs the DEM — so calling create_cost_surface() explicitly is not
+always necessary.
 
 ``` r
 # Load DEM and create hillshade
-data(dem)
-r <- dem()
+r  <- almmr::load_dem()
 hs <- almmr::create_hillshade(r)
 
-# Create cost surface using Tobler's Hiking Function
+# Create cost surface using Tobler's Hiking Function.
+# The result is an 'almmr_cs' object carrying the DEM, edge weights and
+# parameters; pass it to perform_tpla(), lcsc_territory() and sbr_network().
 cs <- almmr::create_cost_surface(
-  dem = r,
-  epsg = "25832",
+  dem          = r,
   costFunction = "ToblersHikingFunction"
 )
 
-# Plot cost surface on hillshade
-plot(hs, col = gray.colors(256, 0.1, 1), legend = FALSE, main = "Cost Surface (Tobler)")
-plot(raster::raster(cs), add = TRUE, alpha = 0.5)
+# Plot the DEM underlying the cost surface on the hillshade
+plot(hs, col = gray.colors(256, 0.1, 1), legend = FALSE, main = "DEM / Cost Surface (Tobler)")
+plot(cs$dem, add = TRUE, alpha = 0.5)
 ```
+
+<img src="man/figures/README-cost-surface-1.png" alt="DEM of the Heuneburg region shown over a hillshade"  />
 
 ------------------------------------------------------------------------
 
@@ -54,35 +75,29 @@ least-cost paths and a density calculation, regions with high route or
 movement potential are calculated within a circular analysis area.
 
 ``` r
-# Heuneburg as center Point
-heuneburg <- terra::vect(cbind(530657,5326988))
+# Heuneburg as center point (in the DEM CRS)
+heuneburg <- terra::vect(cbind(530657, 5326988), crs = terra::crs(r))
 
-# -- CRS handling 
-# Get CRS from DEM in proj4 format for compatibility with raster/gdistance
-epsg <- sf::st_crs(terra::crs(r))$proj4string
-
-# Apply to DEM, Point and Cost Surface (for safety)
-raster::crs(r) <- epsg
-raster::crs(heuneburg) <- epsg
-raster::crs(cs) <- epsg
-
-# Compute Total Passability Landscape Analysis for Heuneburg micro-region
+# Compute Total Passability Landscape Analysis for the Heuneburg micro-region.
+# perform_tpla() reprojects the center point to the cost-surface CRS if needed.
 tpla_heune <- almmr::perform_tpla(
-  cost_surface = cs,
-  center_point = heuneburg,
-  radius_tpla = 4700,
-  number_of_points = 30,
+  cost_surface       = cs,
+  center_point       = heuneburg,
+  radius_tpla        = 4000,
+  number_of_points   = 30,
   sigma_density_calc = 90,
-  keep_lines = FALSE
+  keep_lines         = FALSE
 )
 
-# Plot path on hillshade
+# Plot density on hillshade
 plot(hs, col = gray.colors(256, 0.1, 1), legend = FALSE, main = "Total Passability Landscape Analysis")
 # Mask out cells with near-zero values (remove low-density / non-passable areas)
 tpla_heune_mask <- terra::mask(tpla_heune, tpla_heune > 0.04, maskvalues = FALSE)
 plot(tpla_heune_mask, add = TRUE, alpha = 0.7)
 plot(heuneburg, col = "red", pch = 16, add = TRUE)
 ```
+
+<img src="man/figures/README-tpla-1.png" alt="TPLA movement-potential density around the Heuneburg"  />
 
 ------------------------------------------------------------------------
 
@@ -101,13 +116,12 @@ points_sf <- sf::st_sample(sf::st_as_sf(terra::as.polygons(r)), 10)
 points_sf <-  terra::vect(points_sf)
 
 
-# Run LCSC territory clustering
-territories <- lcsc_territory(
-  dem = r,
-  sites = points_sf,
+# Run LCSC territory calculation (returns a SpatVector of polygons)
+territories <- almmr::lcsc_territory(
+  dem           = r,
+  sites         = points_sf,
   movement_time = 5,
-  max_speed = 6,
-  epsg = "EPSG:25832"
+  max_speed     = 6
 )
 
 # Plot territories on hillshade
@@ -115,6 +129,8 @@ plot(hs, col = gray.colors(256, 0.1, 1), legend = FALSE, main = "LCSC Territorie
 plot(territories, col = hcl.colors(10, "Spectral", alpha = 0.5), add = TRUE)
 plot(points_sf, col = "black", pch = 16, add = TRUE)
 ```
+
+<img src="man/figures/README-lcsc-1.png" alt="LCSC catchment territories around ten random sites"  />
 
 ------------------------------------------------------------------------
 
@@ -137,36 +153,62 @@ So it’s a good idea to grab a coffee and let R do the heavy lifting ☕.
 # Create 10 random points in the DEM extent
 set.seed(7)
 network_pts <- sf::st_sample(sf::st_as_sf(terra::as.polygons(r)), 10)
-network_pts <-  terra::vect(network_pts)
+network_pts <- terra::vect(network_pts)
 
-# random shortest path for reference line
-plot(hs, col = gray.colors(256, 0.1, 1), legend = FALSE, main = "SBR Network and Shortest Path")
+# Plot the points; two of them serve as endpoints for a reference route
+plot(hs, col = gray.colors(256, 0.1, 1), legend = FALSE, main = "SBR Network and Reference Path")
 plot(network_pts, col = "black", pch = 16, add = TRUE)
-# reference points for shortest path
-plot(network_pts[c(2,4)], col = "green", pch = 16, add = TRUE)
+plot(network_pts[c(2, 4)], col = "green", pch = 16, add = TRUE)
 
-sp1 <- gdistance::shortestPath(cs, as(network_pts[2], "Spatial"), as(network_pts[4], "Spatial"), output = "SpatialLines")
+# Reference least-cost path between the two endpoints
+# (replaces the former gdistance::shortestPath(); returns an sf LINESTRING)
+ref_line <- almmr::compute_lcp(
+  dem         = r,
+  origin      = network_pts[2],
+  destination = network_pts[4],
+  cs          = cs
+)
+plot(sf::st_geometry(ref_line), col = "black", add = TRUE)
 
-# add to plot
-plot(sp1, col = "black", add = TRUE)
-
-# Build spatial boundary reconstruction (SBR) network
+# Build the site-based route network from the remaining points.
+# sbr_network() requires an eager cost surface (create_cost_surface(lazy = FALSE)).
 sbr_net <- almmr::sbr_network(
-  sites = as(network_pts[-c(2,4)], "Spatial"),
-  lines = sp1,
-  conductance = cs,
-  steps_points = 50
+  sites        = network_pts[-c(2, 4)],
+  lines        = ref_line,
+  cost_surface = cs,
+  steps_points = 150
 )
 
-
-# Plot network and shortest path on hillshade
-plot(sbr_net, col = "darkgreen", add = TRUE)
-
+# Plot the resulting network
+plot(sf::st_geometry(sbr_net), col = "darkgreen", add = TRUE)
 ```
+
+<img src="man/figures/README-sbr-1.png" alt="Site-based route network connecting sites via least-cost paths"  />
+
+------------------------------------------------------------------------
+
+## Provenance and development
+
+The methodological approaches for Total Passability Landscape Analysis
+(TPLA), least-cost settlement catchment (LCSC) territories, and
+site-based route network (SBR) construction, together with their
+implementation as R functions, are the author’s own work, developed by
+Jonas Abele as part of the doctoral dissertation *Der „Fürstensitz“
+Heuneburg in seinem regionalen Kontext. Eine landschaftsarchäologische
+Untersuchung zur Entwicklung hierarchischer Siedlungsstrukturen*
+(University of Tübingen, 2024) and in part inspired by existing
+literature. The methods and results are described in detail in the
+dissertation; the original implementation was built on the
+[`gdistance`](https://cran.r-project.org/package=gdistance) package.
+
+For publishing this code after completion of the doctorate — in
+particular for error checking, the migration from `gdistance` to a
+native `terra`/`igraph` implementation, and the creation of parts of the
+documentation — AI language-model (LLM) assistance was used.
 
 ------------------------------------------------------------------------
 
 ## License
 
-Code licensed under the MIT License.  
+Code licensed under the GNU General Public License v3.0 (GPL-3).  
 Example data (Heuneburg DEM) © LGL Baden-Württemberg

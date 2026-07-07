@@ -15,37 +15,65 @@ lcsc_territory(
   write_raster = FALSE,
   name_index = NULL,
   wd = NULL,
-  epsg = "EPSG:25832",
-  costFunction = "ToblersHikingFunction"
+  costFunction = "ToblersHikingFunction",
+  numberOfNeighbors = 16,
+  numberOfDirections = 16
 )
 }
 \arguments{
-\item{dem}{Raster. Digital Elevation Data.}
+\item{dem}{SpatRaster. Digital elevation model with a projected CRS.
+RasterLayer input is converted automatically.}
 
-\item{sites}{Sites to analyse as points.}
+\item{sites}{SpatVector or sf. Site locations as points. Reprojected to the
+DEM CRS automatically if needed.}
 
-\item{movement_time}{Time-Frame in minutes}
+\item{movement_time}{Numeric. Time frame in minutes.}
 
-\item{max_speed}{Maximum possible speed of the cost function (e.g. 6 km/h for ToblersHickingFunction. Optional, but good for speeding up the cost_surface calculation)}
+\item{max_speed}{Numeric. Maximum speed of the cost function in km/h
+(e.g. 6 for \code{"ToblersHikingFunction"}). Used only to bound the DEM
+clip per site, which speeds up the calculation.}
 
-\item{slopeBarrier}{TRUE/FALSE. Default FALSE. If TRUE, slope higher than given slopeBarrierValue get a slope value of NA}
+\item{slopeBarrier}{Logical. Default FALSE. Passed to
+\code{create_cost_surface()}. If TRUE, slopes steeper than
+\code{slopeBarrierValue} become impassable.}
 
-\item{slopeBarrierValue}{Start slope value for barriers.}
+\item{slopeBarrierValue}{Numeric. Slope threshold as ratio (e.g. 0.07 = 7 percent).}
 
-\item{write_polygon}{Write polygon of LCSC territory per site to local directory (specified with wd = )}
+\item{write_polygon}{Logical. Default FALSE. If TRUE and \code{wd} is set,
+the combined territory polygons are written as a GeoPackage.}
 
-\item{write_raster}{Write accumulate cost of LCSC territory per site to local directory (specified with wd = )}
+\item{write_raster}{Logical. Default FALSE. If TRUE and \code{wd} is set, the
+accumulated-cost raster (in minutes) is written per site as a GeoTIFF.}
 
-\item{name_index}{Index of a column with the names of the sites. If not specified, a name is automatically generated according to the pattern site_ \link{consecutive number}.}
+\item{name_index}{Column name or index holding the site names. If NULL, names
+are generated automatically as \code{"LCSC_territory_site_id<i>"}.}
 
-\item{wd}{Directory in which the polygons and any raster data can be saved. Optional.}
+\item{wd}{Character. Output directory for optional file writing.}
 
-\item{costFunction}{Cost-Function. Possible: "ToblersHikingFunction"}
+\item{costFunction}{Character. Cost function passed to
+\code{create_cost_surface()}. Designed for \code{"ToblersHikingFunction"}.}
+
+\item{numberOfNeighbors}{Integer. Neighbours for slope calculation (4, 8, 16).
+Passed to \code{create_cost_surface()}.}
+
+\item{numberOfDirections}{Integer. Neighbours for graph connectivity
+(4, 8, 16, 32, 48). Passed to \code{create_cost_surface()}.}
 }
 \value{
-Polygon-Shapefile. Optional: Raster TIFF
+A SpatVector of polygons, one feature per site, with attribute
+columns \code{name} and \code{area} (territory size in hectares).
 }
 \description{
-The function generates theoretical territories or catchment areas based on a cost surface for one or more locations.
-The catchment areas are calculated on the basis of a certain period of time, which, starting from a central location, the movement can take place in all directions depending on the costs.
+Generates theoretical territories or catchment areas based on a cost surface
+for one or more locations. For each site the accumulated travel time from the
+site outward is computed, and all cells reachable within \code{movement_time}
+form the territory polygon.
+}
+\details{
+The accumulated cost is computed as a one-to-all shortest-path problem on a
+directed, weighted graph (\code{igraph}), replacing the former
+\code{gdistance::accCost()}. Travel time is measured \emph{outward} from the
+site (\code{mode = "out"}), matching the semantics of \code{accCost()}. For
+anisotropic cost functions (e.g. Tobler) the outward time differs from the
+time required to reach the site.
 }

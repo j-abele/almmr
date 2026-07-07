@@ -10,27 +10,53 @@ perform_tpla(
   radius_tpla,
   number_of_points,
   sigma_density_calc,
-  keep_lines = FALSE
+  keep_lines = FALSE,
+  resolutions = NULL,
+  corridor_factor = 5
 )
 }
 \arguments{
-\item{cost_surface}{Transition Object. Cost surface (Class: Transition, calculated with the gdistance package)}
+\item{cost_surface}{almmr_cs object from \code{create_cost_surface()}.
+The analysis builds a single graph over the analysis disk (radius
+\code{radius_tpla}) and queries it one-to-many, which is fast and holds
+only the disk-sized graph in memory. An eager cost surface
+(\code{lazy = FALSE}) reuses its pre-computed edge weights; a lazy one
+(\code{lazy = TRUE}) computes the weights for the disk on the fly - slower,
+but memory-safe for DEMs whose full graph would not fit in memory.}
 
-\item{center_point}{Center point of the study area. Class of SpatVector (terra).}
+\item{center_point}{Center point of the study area. SpatVector (terra).
+Will be reprojected automatically if CRS differs from cost surface.}
 
-\item{radius_tpla}{Integer. Radius for the circle of starting points (in meters), in wich tpla will take place.}
+\item{radius_tpla}{Numeric. Radius in meters for the circle of starting
+points around the center point.}
 
-\item{number_of_points}{Integer. Number of starting points on the circle.}
+\item{number_of_points}{Integer. Number of starting points sampled
+regularly along the circle. At least 25 recommended.}
 
-\item{sigma_density_calc}{Number. Standard deviation for the kernel density estimation.}
+\item{sigma_density_calc}{Numeric. Standard deviation in meters for the
+kernel density estimation applied to the least-cost paths.}
 
-\item{keep_lines}{TRUE or FALSE. Default is FALSE. If TRUE, the cost-optimal paths will be included in the result object.}
+\item{keep_lines}{Logical. Default FALSE. If TRUE, the least-cost paths
+are included in the result as an sf object.}
+
+\item{resolutions}{Numeric vector. DEM resolutions in meters for
+hierarchical refinement, ordered coarse to fine
+(e.g. \code{c(500, 250)}). The original DEM resolution is always
+used as the final step. \code{NULL} (the default) skips hierarchical
+refinement and uses the fast single-graph computation. Setting
+\code{resolutions} switches to a slower per-pair computation via
+\code{compute_lcp()}.}
+
+\item{corridor_factor}{Numeric. Buffer multiplier for corridor between
+hierarchical iterations. Corridor width = \code{corridor_factor *
+resolution}. Default 5. Passed directly to \code{compute_lcp()}.}
 }
 \value{
-List or raster. If keep_lines = TRUE, a list object containing the result raster of the kernel density estimation and the cost-optimal paths will be returned.
+SpatRaster with kernel density values, or a named list with
+elements \code{density} (SpatRaster) and \code{lines} (sf) if
+\code{keep_lines = TRUE}.
 }
 \description{
 TPLA stands for Total Passability Landscape Analysis. With the help of least-cost paths and a density calculation,
 regions with high route or movement potential are calculated within a circular analysis area.
-Placeholder: Description to follow (suggestions for research-area, number of points, Spatial-classes etc.)
 }
