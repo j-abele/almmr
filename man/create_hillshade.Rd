@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{create_hillshade}
 \alias{create_hillshade}
-\title{Create Hillshdae from SpatRaster-DEM}
+\title{Create Hillshade from SpatRaster-DEM}
 \usage{
 create_hillshade(dem, angle = 45, direction = 315)
 }
@@ -14,5 +14,5 @@ create_hillshade(dem, angle = 45, direction = 315)
 \item{direction}{Light direction}
 }
 \description{
-Create Hillshdae from SpatRaster-DEM
+Create Hillshade from SpatRaster-DEM
 }

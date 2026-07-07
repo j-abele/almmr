@@ -11,26 +11,47 @@ perform_tpla_line_based(
   number_of_points,
   sigma_density_calc,
   project_crs = NULL,
-  keep_lines = FALSE
+  keep_lines = FALSE,
+  resolutions = NULL,
+  corridor_factor = 5
 )
 }
 \arguments{
-\item{cost_surface}{Transition Object. Cost surface (Class: Transition, calculated with the gdistance package)}
+\item{cost_surface}{almmr_cs object from \code{create_cost_surface()}.
+Supports both eager (\code{lazy = FALSE}) and lazy (\code{lazy = TRUE})
+modes. In lazy mode the graph is built on demand per path, recommended
+for large DEMs.}
 
-\item{first_line}{Spatial Line. Class of LINESTRING (sf).}
+\item{first_line}{LINESTRING (sf/sfc). Source line for the start points.
+Reprojected to the cost surface CRS automatically if needed.}
 
-\item{second_line}{Spatial Line. Class of LINESTRING (sf).}
+\item{second_line}{LINESTRING (sf/sfc). Target line for the end points.}
 
-\item{number_of_points}{Integer. Number of starting points on the circle.}
+\item{number_of_points}{Integer. Number of points sampled regularly along
+each line. At least 20 recommended.}
 
-\item{sigma_density_calc}{Number. Standard deviation for the kernel density estimation.}
+\item{sigma_density_calc}{Numeric. Standard deviation in meters for the
+kernel density estimation applied to the least-cost paths.}
 
-\item{keep_lines}{TRUE or FALSE. Default is FALSE. If TRUE, the cost-optimal paths will be included in the result object.}
+\item{project_crs}{Optional target CRS (any input accepted by
+\code{sf::st_transform}) applied to both lines before computation.}
+
+\item{keep_lines}{Logical. Default FALSE. If TRUE, the least-cost paths are
+included in the result as an sf object.}
+
+\item{resolutions}{Numeric vector. DEM resolutions in meters for
+hierarchical refinement, ordered coarse to fine (e.g. \code{c(500, 250)}).
+\code{NULL} skips hierarchical refinement. Passed to \code{compute_lcp()}.}
+
+\item{corridor_factor}{Numeric. Buffer multiplier for the corridor between
+hierarchical iterations. Default 5. Passed to \code{compute_lcp()}.}
 }
 \value{
-List or Raster. If keep_lines = TRUE, an S4 object containing the result raster of the kernel density estimation and the cost-optimal paths is returned.
+SpatRaster with kernel density values, or a named list with elements
+\code{density} (SpatRaster) and \code{lines} (sf) if \code{keep_lines = TRUE}.
 }
 \description{
-TPLA stands for Total Passability Landscape Analysis. Using least-cost paths and a density calculation,
-it calculates regions with high routes or movement potential between two spatial lines.
+TPLA stands for Total Passability Landscape Analysis. Using least-cost paths
+and a density calculation, it calculates regions with high route or movement
+potential between two spatial lines.
 }

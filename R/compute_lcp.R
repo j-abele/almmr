@@ -135,6 +135,7 @@
 #'      add = TRUE, col = "#00008b", lwd = 2, lty = 2)
 #' plot(origin, add = TRUE, col = "black", pch = 21, bg = "#666666", cex = 1.2)
 #' plot(dest,   add = TRUE, col = "black", pch = 21, bg = "#666666", cex = 1.2)
+#' }
 #' @export
 compute_lcp <- function(
     dem,
