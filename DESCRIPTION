@@ -1,7 +1,7 @@
 Package: almmr
 Type: Package
 Title: Tools for Least-Cost Movement Modeling in Archaeological Landscapes
-Version: 0.1.0
+Version: 1.0.0
 Authors@R: 
     person(
       given = "Jonas",
