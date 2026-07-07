@@ -50,7 +50,7 @@ for direct calls where the expected detour distance is known.}
 
 \item{initial_buffer_factor}{Numeric. Buffer as a fraction of the
 straight-line distance between origin and destination. Default 0.3
-(30\\%). Used when \code{initial_buffer} is NULL. Recommended for
+(30 percent). Used when \code{initial_buffer} is NULL. Recommended for
 \code{perform_tpla()} and other functions where detour distance
 scales with path length.}
 

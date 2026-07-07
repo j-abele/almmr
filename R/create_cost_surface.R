@@ -8,10 +8,10 @@
 #' @param numberOfDirections Integer. Number of neighbours for graph connectivity (4, 8, 16, 32, or 48).
 #' @param slopeGainFactor Logical. Default FALSE. If TRUE, a quadratic penalty is
 #'   applied to slopes steeper than \code{slopeGainStart}.
-#' @param slopeGainStart Numeric. Slope threshold (rise/run) for quadratic penalty (e.g. 0.1 = 10\%).
+#' @param slopeGainStart Numeric. Slope threshold (rise/run) for quadratic penalty (e.g. 0.1 = 10 percent).
 #' @param slopeBarrier Logical. Default FALSE. If TRUE, slopes steeper than
 #'   \code{slopeBarrierValue} become impassable.
-#' @param slopeBarrierValue Numeric. Slope threshold as ratio (e.g. 0.07 = 7\%).
+#' @param slopeBarrierValue Numeric. Slope threshold as ratio (e.g. 0.07 = 7 percent).
 #' @param barriers SpatVector (Polygon). Impassable areas (e.g. rivers, lakes).
 #' @param wetlands SpatVector (Polygon). Areas with reduced movement speed.
 #' @param wetlandsFactor Numeric. Speed reduction factor for wetlands (e.g. 1.78).

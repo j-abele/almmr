@@ -37,7 +37,7 @@ clip per site, which speeds up the calculation.}
 \code{create_cost_surface()}. If TRUE, slopes steeper than
 \code{slopeBarrierValue} become impassable.}
 
-\item{slopeBarrierValue}{Numeric. Slope threshold as ratio (e.g. 0.07 = 7\\%).}
+\item{slopeBarrierValue}{Numeric. Slope threshold as ratio (e.g. 0.07 = 7 percent).}
 
 \item{write_polygon}{Logical. Default FALSE. If TRUE and \code{wd} is set,
 the combined territory polygons are written as a GeoPackage.}

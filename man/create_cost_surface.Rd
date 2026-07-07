@@ -30,12 +30,12 @@ create_cost_surface(
 \item{slopeGainFactor}{Logical. Default FALSE. If TRUE, a quadratic penalty is
 applied to slopes steeper than \code{slopeGainStart}.}
 
-\item{slopeGainStart}{Numeric. Slope threshold (rise/run) for quadratic penalty (e.g. 0.1 = 10\\%).}
+\item{slopeGainStart}{Numeric. Slope threshold (rise/run) for quadratic penalty (e.g. 0.1 = 10 percent).}
 
 \item{slopeBarrier}{Logical. Default FALSE. If TRUE, slopes steeper than
 \code{slopeBarrierValue} become impassable.}
 
-\item{slopeBarrierValue}{Numeric. Slope threshold as ratio (e.g. 0.07 = 7\\%).}
+\item{slopeBarrierValue}{Numeric. Slope threshold as ratio (e.g. 0.07 = 7 percent).}
 
 \item{barriers}{SpatVector (Polygon). Impassable areas (e.g. rivers, lakes).}
 

@@ -23,7 +23,7 @@
 #' @param slopeBarrier Logical. Default FALSE. Passed to
 #'   \code{create_cost_surface()}. If TRUE, slopes steeper than
 #'   \code{slopeBarrierValue} become impassable.
-#' @param slopeBarrierValue Numeric. Slope threshold as ratio (e.g. 0.07 = 7\%).
+#' @param slopeBarrierValue Numeric. Slope threshold as ratio (e.g. 0.07 = 7 percent).
 #' @param write_polygon Logical. Default FALSE. If TRUE and \code{wd} is set,
 #'   the combined territory polygons are written as a GeoPackage.
 #' @param write_raster Logical. Default FALSE. If TRUE and \code{wd} is set, the
