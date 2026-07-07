@@ -7,21 +7,27 @@ It builds on digital elevation models (DEMs) and implements cost-surface
 modeling, least-cost path analysis (TPLA), and spatial boundary
 reconstruction (SBR) methods.  
 All examples below use a 25 m DEM of the Heuneburg region in
-Baden-Württemberg, Germany, included with the package. —
+Baden-Württemberg, Germany, included with the package.
+
+------------------------------------------------------------------------
 
 ## Citation
 
 Please cite **almmr** if you use it in your research; run
 `citation("almmr")` in R or see `CITATION.cff` for the reference. The
 underlying dissertation may additionally be cited for the methodological
-background.
-
-------------------------------------------------------------------------
+background. —
 
 ## Installation
 
+**almmr** is installed from GitHub with the **devtools** package, so
+install that first if you don’t have it:
+
 ``` r
-# Install from GitHub
+# devtools is required to install from GitHub
+install.packages("devtools")
+
+# Install almmr from GitHub
 devtools::install_github("j-abele/almmr")
 
 library(almmr)
@@ -31,7 +37,14 @@ library(sf)
 
 ------------------------------------------------------------------------
 
-## First (basic) step – Cost Surface Generation (run always first!)
+## Cost Surface Generation
+
+Most analyses build a cost surface first with create_cost_surface() and
+pass the resulting almmr_cs object on; this is required for
+perform_tpla(), perform_tpla_line_based() and sbr_network(). Others
+build it internally from the DEM — lcsc_territory(), for instance, only
+needs the DEM — so calling create_cost_surface() explicitly is not
+always necessary.
 
 ``` r
 # Load DEM and create hillshade
@@ -51,6 +64,8 @@ plot(hs, col = gray.colors(256, 0.1, 1), legend = FALSE, main = "DEM / Cost Surf
 plot(cs$dem, add = TRUE, alpha = 0.5)
 ```
 
+<img src="man/figures/README-cost-surface-1.png" alt="DEM of the Heuneburg region shown over a hillshade"  />
+
 ------------------------------------------------------------------------
 
 ## TPLA (Total Passability Landscape Analysis)
@@ -68,7 +83,7 @@ heuneburg <- terra::vect(cbind(530657, 5326988), crs = terra::crs(r))
 tpla_heune <- almmr::perform_tpla(
   cost_surface       = cs,
   center_point       = heuneburg,
-  radius_tpla        = 4700,
+  radius_tpla        = 4000,
   number_of_points   = 30,
   sigma_density_calc = 90,
   keep_lines         = FALSE
@@ -81,6 +96,8 @@ tpla_heune_mask <- terra::mask(tpla_heune, tpla_heune > 0.04, maskvalues = FALSE
 plot(tpla_heune_mask, add = TRUE, alpha = 0.7)
 plot(heuneburg, col = "red", pch = 16, add = TRUE)
 ```
+
+<img src="man/figures/README-tpla-1.png" alt="TPLA movement-potential density around the Heuneburg"  />
 
 ------------------------------------------------------------------------
 
@@ -112,6 +129,8 @@ plot(hs, col = gray.colors(256, 0.1, 1), legend = FALSE, main = "LCSC Territorie
 plot(territories, col = hcl.colors(10, "Spectral", alpha = 0.5), add = TRUE)
 plot(points_sf, col = "black", pch = 16, add = TRUE)
 ```
+
+<img src="man/figures/README-lcsc-1.png" alt="LCSC catchment territories around ten random sites"  />
 
 ------------------------------------------------------------------------
 
@@ -157,13 +176,14 @@ sbr_net <- almmr::sbr_network(
   sites        = network_pts[-c(2, 4)],
   lines        = ref_line,
   cost_surface = cs,
-  steps_points = 50
+  steps_points = 150
 )
 
 # Plot the resulting network
 plot(sf::st_geometry(sbr_net), col = "darkgreen", add = TRUE)
-
 ```
+
+<img src="man/figures/README-sbr-1.png" alt="Site-based route network connecting sites via least-cost paths"  />
 
 ------------------------------------------------------------------------
 
@@ -178,9 +198,7 @@ Heuneburg in seinem regionalen Kontext. Eine landschaftsarchäologische
 Untersuchung zur Entwicklung hierarchischer Siedlungsstrukturen*
 (University of Tübingen, 2024) and in part inspired by existing
 literature. The methods and results are described in detail in the
-dissertation.
-
-The original implementation was built on the
+dissertation; the original implementation was built on the
 [`gdistance`](https://cran.r-project.org/package=gdistance) package.
 
 For publishing this code after completion of the doctorate — in

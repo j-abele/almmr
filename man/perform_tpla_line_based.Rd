@@ -18,9 +18,10 @@ perform_tpla_line_based(
 }
 \arguments{
 \item{cost_surface}{almmr_cs object from \code{create_cost_surface()}.
-Supports both eager (\code{lazy = FALSE}) and lazy (\code{lazy = TRUE})
-modes. In lazy mode the graph is built on demand per path, recommended
-for large DEMs.}
+A single graph is built over the region spanning both lines and queried
+one-to-many. An eager cost surface reuses its pre-computed weights; a lazy
+one computes them for that region on the fly (slower, but memory-safe for
+very large DEMs).}
 
 \item{first_line}{LINESTRING (sf/sfc). Source line for the start points.
 Reprojected to the cost surface CRS automatically if needed.}
@@ -41,7 +42,9 @@ included in the result as an sf object.}
 
 \item{resolutions}{Numeric vector. DEM resolutions in meters for
 hierarchical refinement, ordered coarse to fine (e.g. \code{c(500, 250)}).
-\code{NULL} skips hierarchical refinement. Passed to \code{compute_lcp()}.}
+\code{NULL} (the default) uses the fast single-graph computation; setting
+\code{resolutions} switches to a slower per-pair computation via
+\code{compute_lcp()}.}
 
 \item{corridor_factor}{Numeric. Buffer multiplier for the corridor between
 hierarchical iterations. Default 5. Passed to \code{compute_lcp()}.}

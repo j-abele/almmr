@@ -21,6 +21,7 @@ library(sf)
 The **almmr** package provides tools for modeling movement, accessibility, and territorial structure in archaeological landscapes.  
 It builds on digital elevation models (DEMs) and implements cost-surface modeling, least-cost path analysis (TPLA), and spatial boundary reconstruction (SBR) methods.  
 All examples below use a 25 m DEM of the Heuneburg region in Baden-Württemberg, Germany, included with the package.
+
 ---
 
 ## Citation
@@ -28,13 +29,18 @@ All examples below use a 25 m DEM of the Heuneburg region in Baden-Württemberg,
 Please cite **almmr** if you use it in your research; run `citation("almmr")`
 in R or see `CITATION.cff` for the reference. The underlying dissertation may
 additionally be cited for the methodological background.
-
 ---
 
 ## Installation
 
+**almmr** is installed from GitHub with the **devtools** package, so install
+that first if you don't have it:
+
 ```r
-# Install from GitHub
+# devtools is required to install from GitHub
+install.packages("devtools")
+
+# Install almmr from GitHub
 devtools::install_github("j-abele/almmr")
 
 library(almmr)
@@ -44,9 +50,11 @@ library(sf)
 
 ---
 
-## First (basic) step – Cost Surface Generation (run always first!)
+## Cost Surface Generation
 
-```r
+Most analyses build a cost surface first with create_cost_surface() and pass the resulting almmr_cs object on; this is required for perform_tpla(), perform_tpla_line_based() and sbr_network(). Others build it internally from the DEM — lcsc_territory(), for instance, only needs the DEM — so calling create_cost_surface() explicitly is not always necessary.
+
+```{r cost-surface, message=FALSE, warning=FALSE, fig.alt="DEM of the Heuneburg region shown over a hillshade"}
 # Load DEM and create hillshade
 r  <- almmr::load_dem()
 hs <- almmr::create_hillshade(r)
@@ -71,7 +79,7 @@ plot(cs$dem, add = TRUE, alpha = 0.5)
 TPLA stands for Total Passability Landscape Analysis. With the help of least-cost paths and a density calculation, regions with high route or movement potential are calculated within a circular analysis area.
 
 
-```r
+```{r tpla, message=FALSE, warning=FALSE, fig.alt="TPLA movement-potential density around the Heuneburg"}
 # Heuneburg as center point (in the DEM CRS)
 heuneburg <- terra::vect(cbind(530657, 5326988), crs = terra::crs(r))
 
@@ -80,7 +88,7 @@ heuneburg <- terra::vect(cbind(530657, 5326988), crs = terra::crs(r))
 tpla_heune <- almmr::perform_tpla(
   cost_surface       = cs,
   center_point       = heuneburg,
-  radius_tpla        = 4700,
+  radius_tpla        = 4000,
   number_of_points   = 30,
   sigma_density_calc = 90,
   keep_lines         = FALSE
@@ -102,7 +110,7 @@ plot(heuneburg, col = "red", pch = 16, add = TRUE)
 The function generates theoretical territories or catchment areas based on a cost surface for one or more locations. The catchment areas are calculated on the basis of a certain period of time, which, starting from a central location, the movement can take place in all directions depending on the costs.
 
 
-```r
+```{r lcsc, message=FALSE, warning=FALSE, fig.alt="LCSC catchment territories around ten random sites"}
 # Create 10 random settlement points
 set.seed(7)
 points_sf <- sf::st_sample(sf::st_as_sf(terra::as.polygons(r)), 10)
@@ -134,7 +142,7 @@ Even with the small example DEM included in this package, depending on your hard
 So it’s a good idea to grab a coffee and let R do the heavy lifting ☕.
 
 
-```r
+```{r sbr, message=FALSE, warning=FALSE, fig.alt="Site-based route network connecting sites via least-cost paths"}
 # Create 10 random points in the DEM extent
 set.seed(7)
 network_pts <- sf::st_sample(sf::st_as_sf(terra::as.polygons(r)), 10)
@@ -161,7 +169,7 @@ sbr_net <- almmr::sbr_network(
   sites        = network_pts[-c(2, 4)],
   lines        = ref_line,
   cost_surface = cs,
-  steps_points = 50
+  steps_points = 150
 )
 
 # Plot the resulting network
@@ -169,6 +177,7 @@ plot(sf::st_geometry(sbr_net), col = "darkgreen", add = TRUE)
 
 
 ```
+
 
 
 ---
@@ -183,9 +192,7 @@ dissertation *Der „Fürstensitz“ Heuneburg in seinem regionalen Kontext. Ein
 landschaftsarchäologische Untersuchung zur Entwicklung hierarchischer
 Siedlungsstrukturen* (University of Tübingen, 2024) and in part inspired by
 existing literature. The methods and results are described in
-detail in the dissertation. 
-
-The original implementation was built on the
+detail in the dissertation; the original implementation was built on the
 [`gdistance`](https://cran.r-project.org/package=gdistance) package.
 
 For publishing this code after completion of the doctorate — in particular for

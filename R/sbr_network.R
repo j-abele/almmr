@@ -17,7 +17,7 @@
 #' D. Waugh, Geography. An Integrated Approach. Third edition (Cheltenham 2000).
 #' I. Herzog, Least-cost Networks. In: G. Earl/T. Sly/A. Chrysanthi/P.
 #' Murrieta-Flores/C. Papadopoulos/I. Romanowska/D. Wheatley (Hrsg.),
-#' Archaeology in the Digital Era II (Amsterdam 2013) 237-248.
+#' Archaeology in the Digital Era II (Amsterdam 2013), 237-248.
 #'
 #' @param sites sf or SpatVector. Point locations of the sites. Reprojected to
 #'   the cost surface CRS automatically if needed.
@@ -133,12 +133,20 @@ sbr_network <- function(sites, lines, cost_surface, steps_points = 500, max_spee
     unused <- which(!used)
     if (length(unused) == 0) break
 
-    # Sample waypoints along the current network
-    net_union <- sf::st_union(sf::st_geometry(network))
-    total_len <- as.numeric(sf::st_length(net_union))
-    n_wp      <- max(2, round(total_len / steps_points))
-    wp_sfc    <- sf::st_cast(
-      sf::st_line_sample(net_union, n = n_wp, type = "regular"), "POINT")
+    # Sample waypoints along the current network.
+    # Each network feature is a LINESTRING; sample per feature (avoid st_union,
+    # which merges them into a MULTILINESTRING that st_line_sample rejects).
+    net_lines <- sf::st_geometry(network)
+    if (any(sf::st_geometry_type(net_lines) == "MULTILINESTRING"))
+      net_lines <- sf::st_cast(net_lines, "LINESTRING")
+
+    wp_sfc <- sf::st_line_sample(net_lines, density = 1 / steps_points,
+                                 type = "regular")
+    wp_sfc <- sf::st_cast(wp_sfc, "POINT")
+
+    # Fall back to line vertices if the network is too short for the spacing
+    if (length(wp_sfc) == 0)
+      wp_sfc <- sf::st_cast(net_lines, "POINT")
 
     if (length(wp_sfc) == 0) {
       warning("No waypoints generated; stopping. Adjust 'steps_points'.")

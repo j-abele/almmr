@@ -47,5 +47,5 @@ Literature:
 D. Waugh, Geography. An Integrated Approach. Third edition (Cheltenham 2000).
 I. Herzog, Least-cost Networks. In: G. Earl/T. Sly/A. Chrysanthi/P.
 Murrieta-Flores/C. Papadopoulos/I. Romanowska/D. Wheatley (Hrsg.),
-Archaeology in the Digital Era II (Amsterdam 2013) 237-248.
+Archaeology in the Digital Era II (Amsterdam 2013), 237-248.
 }

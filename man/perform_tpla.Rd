@@ -17,9 +17,12 @@ perform_tpla(
 }
 \arguments{
 \item{cost_surface}{almmr_cs object from \code{create_cost_surface()}.
-Supports both eager (\code{lazy = FALSE}) and lazy (\code{lazy = TRUE})
-modes. In lazy mode the graph is built on demand for the buffer extent of the LCP
-only, recommended for large DEMs.}
+The analysis builds a single graph over the analysis disk (radius
+\code{radius_tpla}) and queries it one-to-many, which is fast and holds
+only the disk-sized graph in memory. An eager cost surface
+(\code{lazy = FALSE}) reuses its pre-computed edge weights; a lazy one
+(\code{lazy = TRUE}) computes the weights for the disk on the fly - slower,
+but memory-safe for DEMs whose full graph would not fit in memory.}
 
 \item{center_point}{Center point of the study area. SpatVector (terra).
 Will be reprojected automatically if CRS differs from cost surface.}
@@ -39,8 +42,10 @@ are included in the result as an sf object.}
 \item{resolutions}{Numeric vector. DEM resolutions in meters for
 hierarchical refinement, ordered coarse to fine
 (e.g. \code{c(500, 250)}). The original DEM resolution is always
-used as the final step. \code{NULL} skips hierarchical refinement.
-Passed directly to \code{compute_lcp()}.}
+used as the final step. \code{NULL} (the default) skips hierarchical
+refinement and uses the fast single-graph computation. Setting
+\code{resolutions} switches to a slower per-pair computation via
+\code{compute_lcp()}.}
 
 \item{corridor_factor}{Numeric. Buffer multiplier for corridor between
 hierarchical iterations. Corridor width = \code{corridor_factor *

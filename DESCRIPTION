@@ -30,7 +30,7 @@ Imports:
 Suggests:
     knitr,
     rmarkdown,
-    testthat
+    testthat (>= 3.0.0)
 VignetteBuilder: knitr
 Keywords:
     archaeology, 
@@ -41,3 +41,4 @@ Keywords:
     network-to-builder, 
     total-passability-landscape-analysis
 Config/roxygen2/version: 8.0.0
+Config/testthat/edition: 3
