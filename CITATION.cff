@@ -1,0 +1,41 @@
+cff-version: 1.2.0
+title: >-
+  almmr: Tools for Least-Cost Movement Modeling in
+  Archaeological Landscapes
+message: >-
+  If you use this software, please cite both the software
+  and the dissertation in which the underlying methods were
+  developed (see the "references" section below).
+type: software
+authors:
+  - given-names: Jonas
+    family-names: Abele
+    orcid: "https://orcid.org/0009-0008-1540-6202"
+repository-code: "https://github.com/j-abele/almmr"
+abstract: >-
+  Tools for modeling and analyzing least-cost movement and
+  accessibility based on digital elevation models (DEMs) and
+  friction surfaces, including cost-surface generation,
+  Total Passability Landscape Analysis (TPLA), least-cost
+  settlement catchment (LCSC) territories, and site-based
+  route network (SBR) construction. Example data from the
+  Heuneburg region in southwestern Germany are included.
+keywords:
+  - archaeology
+  - least-cost-analysis
+  - landscape-archaeology
+  - movement-modeling
+  - R
+version: 0.1.0
+license: GPL-3.0-only
+references:
+  - type: thesis
+    title: 'Der „Fürstensitz“ Heuneburg in seinem regionalen Kontext. Eine landschaftsarchäologische Untersuchung zur Entwicklung hierarchischer Siedlungsstrukturen'
+    thesis-type: "Unpublished PhD thesis"
+    authors:
+      - given-names: Jonas
+        family-names: Abele
+    institution:
+      name: "Universität Tübingen"
+    year: 2024
+    # doi: "<DOI>"
