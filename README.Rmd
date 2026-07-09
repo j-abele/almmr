@@ -6,7 +6,7 @@ output: github_document
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  fig.path = "man/figures/README-",  # <— wichtig, damit Bilder gespeichert werden
+  fig.path = "man/figures/README-",  
   fig.width = 5,
   fig.height = 4,
   dpi = 150
@@ -22,14 +22,15 @@ The **almmr** package provides tools for modeling movement, accessibility, and t
 It builds on digital elevation models (DEMs) and implements cost-surface modeling, least-cost path analysis (TPLA), and spatial boundary reconstruction (SBR) methods.  
 All examples below use a 25 m DEM of the Heuneburg region in Baden-Württemberg, Germany, included with the package.
 
----
+***
 
 ## Citation
 
 Please cite **almmr** if you use it in your research; run `citation("almmr")`
 in R or see `CITATION.cff` for the reference. The underlying dissertation may
 additionally be cited for the methodological background.
----
+
+***
 
 ## Installation
 
@@ -48,7 +49,7 @@ library(terra)
 library(sf)
 ```
 
----
+***
 
 ## Cost Surface Generation
 
@@ -56,7 +57,8 @@ Most analyses build a cost surface first with create_cost_surface() and pass the
 
 ```{r cost-surface, message=FALSE, warning=FALSE, fig.alt="DEM of the Heuneburg region shown over a hillshade"}
 # Load DEM and create hillshade
-r  <- almmr::load_dem()
+r  <- almmr::load_dem()                          # example DEM shipped with almmr
+# r <- terra::rast("path/to/your_dem.tif")       # or load your own DEM
 hs <- almmr::create_hillshade(r)
 
 # Create cost surface using Tobler's Hiking Function.
@@ -68,7 +70,32 @@ cs <- almmr::create_cost_surface(
 )
 ```
 
----
+***
+### Adding water routes
+
+Movement along rivers and across standing water can be added to the cost
+surface with the optional `rivers` and `waterbodies` arguments. River edges are
+directed — faster downstream than upstream — while standing water is isotropic.
+Flow direction is derived robustly from the river geometry and the overall
+elevation trend, so noise in the DEM between adjacent cells does not flip it.
+
+```r
+# rivers: SpatVector (lines); waterbodies: SpatVector (polygons)
+# r <- terra::rast("path/to/your_dem.tif")   # your own DEM
+cs_water <- create_cost_surface(
+  r,
+  rivers                = my_rivers,
+  waterbodies           = my_lakes,
+  downstream_speed_kmh  = 12,
+  upstream_speed_kmh    = 3,
+  waterbodies_speed_kmh = 5
+)
+```
+
+The resulting `cs_water` is used exactly like any other cost surface, e.g. in
+`perform_tpla()` or `compute_lcp()`.
+
+***
 
 ## TPLA (Total Passability Landscape Analysis)
 
@@ -99,7 +126,7 @@ plot(heuneburg, col = "red", pch = 16, add = TRUE)
 
 ```
 
----
+***
 
 ## LCSC Territory - Potential settlement area
 
@@ -127,7 +154,7 @@ plot(territories, col = hcl.colors(10, "Spectral", alpha = 0.5), add = TRUE)
 plot(points_sf, col = "black", pch = 16, add = TRUE)
 ```
 
----
+***
 
 ## SBR_network - Site-based (theoretical) route network (sbr_network)
 
@@ -176,7 +203,7 @@ plot(sf::st_geometry(sbr_net), col = "darkgreen", add = TRUE)
 
 
 
----
+***
 
 ## Provenance and development
 
@@ -196,7 +223,7 @@ error checking, the migration from `gdistance` to a native `terra`/`igraph`
 implementation, and the creation of parts of the documentation — AI
 language-model (LLM) assistance was used.
 
----
+***
 
 ## License
 
