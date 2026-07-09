@@ -16,7 +16,8 @@ accessed through this helper so that users can simply call \code{data(dem)}.
 }
 \examples{
 \dontrun{
-data(dem)
-plot(dem)
+r <- load_dem()                            # example DEM shipped with almmr
+# r <- terra::rast("path/to/your_dem.tif") # or load your own DEM
+plot(r)
 }
 }

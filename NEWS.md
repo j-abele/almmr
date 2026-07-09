@@ -1,3 +1,21 @@
+# almmr 1.1.0
+
+## New features
+
+- `create_cost_surface()` can now incorporate water routing via two optional
+  arguments:
+  - `rivers` (SpatVector lines): edges between two river cells are re-weighted
+    by travel time on water, faster downstream (`downstream_speed_kmh`) than
+    upstream (`upstream_speed_kmh`). Flow direction is derived from the river
+    geometry combined with the overall elevation trend, so DEM noise between
+    adjacent cells does not flip it.
+  - `waterbodies` (SpatVector polygons): movement between two waterbody cells is
+    isotropic, using `waterbodies_speed_kmh`.
+- Water routing works in both eager and lazy mode, so all analysis functions
+  (`perform_tpla()`, `lcsc_territory()`, `sbr_network()`) pick it up
+  automatically.
+
+
 \# almmr 1.0.0
 
 

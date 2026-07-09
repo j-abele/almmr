@@ -1,7 +1,23 @@
 #' Create Cost Surface
 #'
 #' Creates a cost surface based on a digital elevation model (DEM) using
-#' different cost functions and optional barrier or wetland factors.
+#' different cost functions and optional barriers, wetlands and water routing
+#' (rivers and standing water).
+#'
+#' @details
+#' Water routing is optional and controlled by the \code{rivers} and
+#' \code{waterbodies} arguments. Along a river, edges between two river cells are
+#' re-weighted by travel time on water: moving downstream uses
+#' \code{downstream_speed_kmh}, moving upstream \code{upstream_speed_kmh}. The
+#' flow direction is derived from the river geometry (position along the line)
+#' combined with the overall elevation trend, which is robust to DEM noise
+#' between adjacent cells. In very flat regions or for very short rivers this
+#' trend can be weak, so the direction may be less reliable there; choosing the
+#' up- and downstream speeds closer together then makes the direction largely
+#' irrelevant. Standing water (\code{waterbodies}) is isotropic: movement between
+#' two waterbody cells uses \code{waterbodies_speed_kmh} in any direction. Water
+#' weights override the terrain-based weights on the affected edges, and
+#' waterbodies are applied before rivers, so rivers win on any overlapping edge.
 #'
 #' @param dem SpatRaster. Digital elevation data.
 #' @param numberOfNeighbors Integer. Number of neighbours for slope calculation (4, 8, or 16).
@@ -15,6 +31,19 @@
 #' @param barriers SpatVector (Polygon). Impassable areas (e.g. rivers, lakes).
 #' @param wetlands SpatVector (Polygon). Areas with reduced movement speed.
 #' @param wetlandsFactor Numeric. Speed reduction factor for wetlands (e.g. 1.78).
+#' @param rivers SpatVector (lines). Optional river network. Edges between two
+#'   river cells are re-weighted by travel time on water: moving downstream uses
+#'   \code{downstream_speed_kmh}, moving upstream uses \code{upstream_speed_kmh}.
+#'   Flow direction is derived robustly from the river geometry (position along
+#'   the line) and the overall elevation trend, so DEM noise between adjacent
+#'   cells does not flip it. If the layer has a \code{name} attribute, features
+#'   are grouped into rivers by name.
+#' @param waterbodies SpatVector (polygons). Optional standing water. Movement
+#'   between two waterbody cells uses \code{waterbodies_speed_kmh} in any
+#'   direction. Applied after rivers, so rivers win on any overlapping edge.
+#' @param downstream_speed_kmh Numeric. River travel speed downstream (km/h). Default 12.
+#' @param upstream_speed_kmh Numeric. River travel speed upstream (km/h). Default 3.
+#' @param waterbodies_speed_kmh Numeric. Travel speed across standing water (km/h). Default 5.
 #' @param costFunction Character. One of \code{"ToblersHikingFunction"},
 #'   \code{"Irmischer-Clarke's"}, \code{"Wheeled-Vehicels"}.
 #' @param critical_slope Numeric. Critical slope in percent for \code{"Wheeled-Vehicels"}. Default 10.
@@ -27,6 +56,46 @@
 #'   In eager mode (\code{lazy = FALSE}), also contains pre-computed edge pairs
 #'   and weights. Pass to \code{perform_tpla()}, \code{lcsc_territory()},
 #'   and \code{sbr_network()}.
+#' @examples
+#' \dontrun{
+#' r <- load_dem()                                # example DEM shipped with almmr
+#' # r <- terra::rast("path/to/your_dem.tif")     # or load your own DEM
+#'
+#' # Basic cost surface (Tobler's Hiking Function)
+#' cs <- create_cost_surface(r, costFunction = "ToblersHikingFunction")
+#'
+#' # With a river network (lines) and standing water (polygons).
+#' # If the river layer has a 'name' attribute, features are grouped by river.
+#' cs_water <- create_cost_surface(
+#'   r,
+#'   rivers                = my_rivers,   # SpatVector (lines)
+#'   waterbodies           = my_lakes,    # SpatVector (polygons)
+#'   downstream_speed_kmh  = 12,
+#'   upstream_speed_kmh    = 3,
+#'   waterbodies_speed_kmh = 5
+#' )
+#'
+#' # Full example combining terrain, barriers, wetlands and water
+#' cs_full <- create_cost_surface(
+#'   r,
+#'   numberOfNeighbors     = 16,
+#'   numberOfDirections    = 16,
+#'   slopeGainFactor       = TRUE,
+#'   slopeGainStart        = 0.10,
+#'   slopeBarrier          = TRUE,
+#'   slopeBarrierValue     = 0.5,
+#'   barriers              = my_barriers,   # SpatVector (polygons)
+#'   wetlands              = my_wetlands,   # SpatVector (polygons)
+#'   wetlandsFactor        = 1.78,
+#'   rivers                = my_rivers,     # SpatVector (lines)
+#'   waterbodies           = my_lakes,      # SpatVector (polygons)
+#'   downstream_speed_kmh  = 12,
+#'   upstream_speed_kmh    = 3,
+#'   waterbodies_speed_kmh = 5,
+#'   costFunction          = "ToblersHikingFunction",
+#'   lazy                  = FALSE
+#' )
+#' }
 #' @export
 create_cost_surface <- function(
     dem,
@@ -39,6 +108,11 @@ create_cost_surface <- function(
     barriers            = NULL,
     wetlands            = NULL,
     wetlandsFactor      = 1.78,
+    rivers                = NULL,
+    waterbodies           = NULL,
+    downstream_speed_kmh  = 12,
+    upstream_speed_kmh    = 3,
+    waterbodies_speed_kmh = 5,
     costFunction        = "ToblersHikingFunction",
     critical_slope      = 10,
     lazy                = FALSE
@@ -72,6 +146,12 @@ create_cost_surface <- function(
 
   if (!is.null(wetlands) && !inherits(wetlands, "SpatVector"))
     stop("'wetlands' must be a SpatVector.")
+
+  if (!is.null(rivers) && !inherits(rivers, "SpatVector"))
+    stop("'rivers' must be a SpatVector (lines).")
+
+  if (!is.null(waterbodies) && !inherits(waterbodies, "SpatVector"))
+    stop("'waterbodies' must be a SpatVector (polygons).")
 
   if (slopeBarrier && is.null(slopeBarrierValue))
     stop("'slopeBarrierValue' must be set when 'slopeBarrier = TRUE'.")
@@ -176,6 +256,18 @@ create_cost_surface <- function(
       weight[on_barrier] <- NA
     }
 
+    # Apply river / waterbody travel weights (override terrain on water edges)
+    if (!is.null(rivers) || !is.null(waterbodies)) {
+      weight <- .apply_water_weights(
+        adj_slope, weight, dem,
+        rivers                = rivers,
+        waterbodies           = waterbodies,
+        downstream_speed_kmh  = downstream_speed_kmh,
+        upstream_speed_kmh    = upstream_speed_kmh,
+        waterbodies_speed_kmh = waterbodies_speed_kmh
+      )
+    }
+
   } else {
     # Lazy mode: no computation yet
     adj_slope <- NULL
@@ -204,6 +296,11 @@ create_cost_surface <- function(
         wetlands            = wetlands,
         wetlands_factor     = wetlandsFactor,
         barriers            = barriers,
+        rivers                = rivers,
+        waterbodies           = waterbodies,
+        downstream_speed_kmh  = downstream_speed_kmh,
+        upstream_speed_kmh    = upstream_speed_kmh,
+        waterbodies_speed_kmh = waterbodies_speed_kmh,
         critical_slope      = critical_slope,
         lazy                = lazy
       )

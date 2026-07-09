@@ -1,4 +1,3 @@
-
 #' Create Hillshade from SpatRaster-DEM
 #'
 #' @param dem Digital elevation modell of class SpatRaster
@@ -7,9 +6,9 @@
 #' @export
 #'
 create_hillshade <- function(dem, angle = 45, direction = 315) {
- if (!inherits(dem, "SpatRaster")) {
-   dem <- terra::rast(dem)
-   }
+  if (!inherits(dem, "SpatRaster")) {
+    dem <- terra::rast(dem)
+  }
   slope  <- terra::terrain(dem, "slope",  unit = "radians")
   aspect <- terra::terrain(dem, "aspect", unit = "radians")
   hill   <- terra::shade(slope, aspect, angle = angle, direction = direction)
@@ -26,8 +25,9 @@ create_hillshade <- function(dem, angle = 45, direction = 315) {
 #' @return A [`SpatRaster`][terra::SpatRaster] object.
 #' @examples
 #' \dontrun{
-#' data(dem)
-#' plot(dem)
+#' r <- load_dem()                            # example DEM shipped with almmr
+#' # r <- terra::rast("path/to/your_dem.tif") # or load your own DEM
+#' plot(r)
 #' }
 #' @export
 load_dem <- function() {
@@ -134,6 +134,18 @@ load_dem <- function() {
       barrier_cells       <- terra::values(barriers_r, mat = FALSE) == 1L
       on_barrier          <- barrier_cells[adj_slope[, 1]] | barrier_cells[adj_slope[, 2]]
       weights[on_barrier] <- NA
+    }
+
+    # Apply river / waterbody travel weights on the clipped DEM
+    if (!is.null(p$rivers) || !is.null(p$waterbodies)) {
+      weights <- .apply_water_weights(
+        adj_slope, weights, dem,
+        rivers                = p$rivers,
+        waterbodies           = p$waterbodies,
+        downstream_speed_kmh  = p$downstream_speed_kmh,
+        upstream_speed_kmh    = p$upstream_speed_kmh,
+        waterbodies_speed_kmh = p$waterbodies_speed_kmh
+      )
     }
 
     adj       <- adj_slope

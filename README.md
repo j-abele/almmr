@@ -16,7 +16,9 @@ Baden-Württemberg, Germany, included with the package.
 Please cite **almmr** if you use it in your research; run
 `citation("almmr")` in R or see `CITATION.cff` for the reference. The
 underlying dissertation may additionally be cited for the methodological
-background. —
+background.
+
+------------------------------------------------------------------------
 
 ## Installation
 
@@ -48,7 +50,8 @@ always necessary.
 
 ``` r
 # Load DEM and create hillshade
-r  <- almmr::load_dem()
+r  <- almmr::load_dem()                          # example DEM shipped with almmr
+# r <- terra::rast("path/to/your_dem.tif")       # or load your own DEM
 hs <- almmr::create_hillshade(r)
 
 # Create cost surface using Tobler's Hiking Function.
@@ -59,6 +62,33 @@ cs <- almmr::create_cost_surface(
   costFunction = "ToblersHikingFunction"
 )
 ```
+
+------------------------------------------------------------------------
+
+### Adding water routes
+
+Movement along rivers and across standing water can be added to the cost
+surface with the optional `rivers` and `waterbodies` arguments. River
+edges are directed — faster downstream than upstream — while standing
+water is isotropic. Flow direction is derived robustly from the river
+geometry and the overall elevation trend, so noise in the DEM between
+adjacent cells does not flip it.
+
+``` r
+# rivers: SpatVector (lines); waterbodies: SpatVector (polygons)
+# r <- terra::rast("path/to/your_dem.tif")   # your own DEM
+cs_water <- create_cost_surface(
+  r,
+  rivers                = my_rivers,
+  waterbodies           = my_lakes,
+  downstream_speed_kmh  = 12,
+  upstream_speed_kmh    = 3,
+  waterbodies_speed_kmh = 5
+)
+```
+
+The resulting `cs_water` is used exactly like any other cost surface,
+e.g. in `perform_tpla()` or `compute_lcp()`.
 
 ------------------------------------------------------------------------
 
